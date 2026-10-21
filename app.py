@@ -44,7 +44,7 @@ if question := st.chat_input('환자에게 질문하세요'):
     with st.chat_message('assistant'):
         try:
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-3.8-flash',
                 contents=history,
                 config=types.GenerateContentConfig(system_instruction=PATIENT, temperature=0.3, max_output_tokens=250),
             )
