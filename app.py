@@ -49,8 +49,9 @@ if question := st.chat_input('환자에게 질문하세요'):
                 config=types.GenerateContentConfig(system_instruction=PATIENT, temperature=0.3, max_output_tokens=250),
             )
             answer = response.text or '죄송해요, 다시 질문해 주시겠어요?'
-        except Exception:
-            answer = '현재 응답을 생성하지 못했습니다. 잠시 후 다시 질문해 주세요.'
+        except Exception as e:
+            print(f"Gemini API 오류: {type(e).__name__}: {e}", flush=True)
+            answer = '현재 응답을 생성하지 못했습니다. 관리자에게 문의해 주세요.'
         st.write(answer)
     st.session_state.messages.append({'role': 'assistant', 'content': answer})
 
