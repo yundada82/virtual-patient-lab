@@ -20,7 +20,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate
 
 st.set_page_config(page_title="Virtual Patient Lab", page_icon="🩺")
 st.title("🩺 Virtual Patient Lab")
-st.caption("임상의사결정 실습 | S·O 정보 수집 → A·P 작성 → PDF 보고서")
+st.caption("임상의사결정 실습 | 환자 문진 → 필요한 검사 시행 → A·P 작성 → 보고서 제출")
 
 DATA_PATH = Path(__file__).resolve().parent / "patients.json"
 try:
@@ -123,8 +123,7 @@ if not selected or selected not in PATIENTS:
     st.stop()
 patient = PATIENTS[selected]
 identity = patient["identity"]
-st.info(f"환자: {identity['name']} / {identity['age']}세 / {identity['sex']} / "
-        f"{identity['diagnosis']} / {identity['phase']}")
+st.info(f"담당 환자: {identity['name']} / {identity['age']}세 / {identity['sex']} / 의학적 진단: {identity['diagnosis']}")
 if st.button("새 문진 시작", help="현재 환자의 문진·검사·작성 기록을 지웁니다."):
     new_session(selected)
     st.rerun()
@@ -160,19 +159,33 @@ def system_prompt(p):
 
 
 def quick_fact_answer(p, question):
-    """Answer only tightly matched factual questions; all ambiguous questions go to Gemini."""
+    """Only answer explicitly grounded questions. Other questions go to Gemini."""
     q = re.sub(r"\s+", "", question).lower()
     identity = p["identity"]
     phase = identity["phase"]
     diagnosis = identity["diagnosis"]
+    subjective = p["subjective"]
     if ("수술" in q and any(t in q for t in ("언제", "얼마나", "몇주", "며칠", "몇달", "몇개월", "몇년"))
             and phase.startswith("수술 후")):
-        side = "오른쪽" if "오른쪽" in diagnosis else "왼쪽" if "왼쪽" in diagnosis else ""
-        return f"{side} 수술받은 지 이제 {phase.removeprefix('수술 후 ').split(',')[0]} 정도 됐어요."
+        return f"수술받은 지 이제 {phase.removeprefix('수술 후 ').split(',')[0]} 정도 됐어요."
     if any(t in q for t in ("몇살", "나이가어떻게", "연세가어떻게", "연세는", "나이는")):
         return f"저는 {identity['age']}살이에요."
-    if any(t in q for t in ("사고난지얼마나", "다친지얼마나", "발병한지얼마나")) and phase.startswith(("손상 후", "발병 후")):
-        return f"{phase.replace('손상 후', '다친 지').replace('발병 후', '증상이 시작된 지')} 됐어요."
+    # Onset is distinct from elapsed time after surgery. Use the explicit
+    # subjective onset only when its meaning is unambiguous.
+    onset_question = any(t in q for t in (
+        "아프신지얼마나", "아픈지얼마나", "통증이시작된지", "통증은언제부터",
+        "언제부터아프", "증상은언제부터", "언제부터증상", "발병한지얼마나",
+        "다친지얼마나", "사고난지얼마나"))
+    if onset_question:
+        if ("사고" in q or "다친" in q) and phase.startswith("손상 후"):
+            return f"사고가 난 지 {phase.removeprefix('손상 후 ')} 됐어요."
+        if phase.startswith("발병 후"):
+            return f"증상이 시작된 지 {phase.removeprefix('발병 후 ')} 정도 됐어요."
+        if "수술" not in q and p["id"] == "P02":
+            return "허리가 아프기 시작한 지 약 3개월 됐어요."
+        onset = subjective.get("onset", "")
+        if onset and "수술" not in q:
+            return f"{onset}이에요." if not onset.endswith(("요", "다", ".")) else onset
     return None
 
 
@@ -195,6 +208,7 @@ def request_patient_reply(history, prompt):
 
 
 st.subheader("💬 환자 문진")
+st.caption("환자에게 직접 질문해 보세요. 질문한 내용만 답변합니다. 검사 결과는 아래 검사 메뉴에서 확인할 수 있습니다.")
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
@@ -253,7 +267,7 @@ if st.session_state.report_requested:
 
 st.divider()
 st.subheader("🔎 추가 검사 시행")
-st.caption("검사명을 선택하고 이유를 작성하면 해당 환자에게 사전 설정된 결과만 공개됩니다.")
+st.caption("필요하다고 판단한 검사를 선택하고, 선택 이유를 작성한 뒤 결과를 확인하세요.")
 keys = list(patient["objective"])
 with st.form("exam_form"):
     chosen = st.selectbox("시행할 검사", keys, format_func=lambda k: LABELS.get(k, k))
@@ -275,11 +289,11 @@ if st.session_state.exam_log:
 
 st.divider()
 st.subheader("✍️ A. Assessment / P. Plan 작성")
-st.caption("학생이 직접 작성합니다. AI가 평가나 치료계획을 대신 작성하지 않습니다.")
+st.caption("수집한 S·O 정보를 종합하여 직접 작성하세요. AI는 평가·치료계획의 정답을 제공하지 않습니다.")
 st.text_input("조 / 학번", key="student_group")
 st.text_input("학생 이름", key="student_names")
-st.text_area("A — Assessment", key="assessment", height=190)
-st.text_area("P — Plan", key="plan", height=190)
+st.text_area("A — Assessment", key="assessment", height=190, placeholder="문제 목록, 우선순위, 검사 결과를 통합한 임상적 판단")
+st.text_area("P — Plan", key="plan", height=190, placeholder="치료 목표, 중재 및 근거, 재평가 계획")
 
 
 def make_pdf():
