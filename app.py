@@ -243,50 +243,49 @@ with chat_col:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
 
-        if question := st.chat_input("환자에게 질문하거나 의뢰 기록을 요청하세요", key="patient_chat_input"):
-            user_count = sum(m["role"] == "user" for m in st.session_state.messages)
-            if user_count >= 20:
-                st.warning("이번 실습의 질문 횟수 제한(20회)에 도달했습니다.")
-                st.stop()
-            st.session_state.messages.append({"role": "user", "content": question})
-            with st.chat_message("user"):
-                st.write(question)
-            if wants_report(question):
-                st.session_state.report_requested = True
-                answer = "네, 의뢰 관련 기록을 보여드릴게요."
-            elif seems_like_exam(question):
-                answer = "검사 결과는 오른쪽 '추가 검사 시행' 메뉴에서 해당 검사를 선택하면 확인할 수 있습니다."
+    # 대화 입력창은 스크롤되는 메시지 컨테이너 바깥, 맨 아래에 고정 배치
+    if question := st.chat_input("환자에게 질문하거나 의뢰 기록을 요청하세요", key="patient_chat_input"):
+        user_count = sum(m["role"] == "user" for m in st.session_state.messages)
+        if user_count >= 20:
+            st.warning("이번 실습의 질문 횟수 제한(20회)에 도달했습니다.")
+            st.stop()
+        st.session_state.messages.append({"role": "user", "content": question})
+        if wants_report(question):
+            st.session_state.report_requested = True
+            answer = "네, 의뢰 관련 기록을 보여드릴게요."
+        elif seems_like_exam(question):
+            answer = "검사 결과는 오른쪽 '추가 검사 시행' 메뉴에서 해당 검사를 선택하면 확인할 수 있습니다."
+        else:
+            fixed_answer = quick_fact_answer(patient, question)
+            if fixed_answer is not None:
+                answer = fixed_answer
             else:
-                fixed_answer = quick_fact_answer(patient, question)
-                if fixed_answer is not None:
-                    answer = fixed_answer
-                else:
-                    history = [types.Content(role="user" if m["role"] == "user" else "model",
-                                             parts=[types.Part(text=m["content"])])
-                               for m in st.session_state.messages[-16:]]
-                    try:
-                        with st.spinner("환자가 답변하고 있습니다..."):
-                            response = request_patient_reply(history, system_prompt(patient))
-                        answer = (response.text or "").strip()
-                        if not answer:
-                            answer = "죄송해요, 다시 질문해 주시겠어요?"
-                        elif getattr(response, "candidates", None):
-                            finish = getattr(response.candidates[0], "finish_reason", None)
-                            if finish and "MAX_TOKENS" in str(finish):
-                                print("Gemini 응답이 토큰 제한으로 중단됨", flush=True)
-                                answer = "죄송해요. 말씀을 다시 정리해서 답해 드릴게요. 질문을 한 번 더 해주시겠어요?"
-                    except Exception as exc:
-                        print(f"Gemini API 오류: {type(exc).__name__}: {exc}", flush=True)
-                        code = getattr(exc, "code", None)
-                        if code == 503:
-                            answer = "지금 잠시 연결이 원활하지 않아요. 조금 뒤에 같은 질문을 다시 해주세요."
-                        elif code == 429:
-                            answer = "현재 AI 요청 한도에 도달했어요. 잠시 후 다시 시도해 주세요."
-                        else:
-                            answer = "현재 환자 응답을 생성하지 못했습니다. 잠시 후 다시 시도하거나 관리자에게 알려 주세요."
-            st.session_state.messages.append({"role": "assistant", "content": answer})
-            with st.chat_message("assistant"):
-                st.write(answer)
+                history = [types.Content(role="user" if m["role"] == "user" else "model",
+                                         parts=[types.Part(text=m["content"])])
+                           for m in st.session_state.messages[-16:]]
+                try:
+                    with st.spinner("환자가 답변하고 있습니다..."):
+                        response = request_patient_reply(history, system_prompt(patient))
+                    answer = (response.text or "").strip()
+                    if not answer:
+                        answer = "죄송해요, 다시 질문해 주시겠어요?"
+                    elif getattr(response, "candidates", None):
+                        finish = getattr(response.candidates[0], "finish_reason", None)
+                        if finish and "MAX_TOKENS" in str(finish):
+                            print("Gemini 응답이 토큰 제한으로 중단됨", flush=True)
+                            answer = "죄송해요. 말씀을 다시 정리해서 답해 드릴게요. 질문을 한 번 더 해주시겠어요?"
+                except Exception as exc:
+                    print(f"Gemini API 오류: {type(exc).__name__}: {exc}", flush=True)
+                    code = getattr(exc, "code", None)
+                    if code == 503:
+                        answer = "지금 잠시 연결이 원활하지 않아요. 조금 뒤에 같은 질문을 다시 해주세요."
+                    elif code == 429:
+                        answer = "현재 AI 요청 한도에 도달했어요. 잠시 후 다시 시도해 주세요."
+                    else:
+                        answer = "현재 환자 응답을 생성하지 못했습니다. 잠시 후 다시 시도하거나 관리자에게 알려 주세요."
+        st.session_state.messages.append({"role": "assistant", "content": answer})
+        st.rerun()
+
 
 
 with right_col:
