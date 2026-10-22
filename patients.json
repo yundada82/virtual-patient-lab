@@ -1,0 +1,944 @@
+{
+  "schema_version": "1.0",
+  "status": "교육용 초안 - 검증 전",
+  "patients": [
+    {
+      "id": "P01",
+      "identity": {
+        "name": "박영숙",
+        "age": 68,
+        "sex": "여",
+        "diagnosis": "오른쪽 무릎 골관절염, 오른쪽 인공무릎관절 전치환술(TKA)",
+        "phase": "수술 후 4주"
+      },
+      "history": {
+        "medical": [
+          "약물로 조절 중인 고혈압"
+        ],
+        "living": "남편과 엘리베이터 있는 아파트 5층 거주",
+        "occupation": "은퇴한 주부",
+        "precautions": "집도의 지시에 따른 허용범위 내 체중부하(WBAT)",
+        "red_flags_denied": [
+          "발열",
+          "상처 분비물",
+          "새로운 종아리 통증",
+          "호흡곤란",
+          "흉통"
+        ]
+      },
+      "subjective": {
+        "chief_complaints": [
+          "무릎 뻣뻣함",
+          "움직일 때 통증",
+          "부종",
+          "계단 내려가기 어려움"
+        ],
+        "onset": "약 7년 전 시작, 최근 2년 악화 후 수술",
+        "mobility_report": "집 안은 짧은 거리 혼자 걷고, 외출 시 지팡이 사용",
+        "goals": [
+          "지팡이 없이 20분 걷기",
+          "장보기",
+          "집안일 복귀"
+        ],
+        "sleep": "가끔 통증으로 수면 방해"
+      },
+      "objective": {
+        "rom_deg": {
+          "knee_flexion_arom": {
+            "R": 95,
+            "L": 135
+          },
+          "knee_flexion_prom": {
+            "R": 105,
+            "L": 140
+          },
+          "knee_extension_arom": {
+            "R": -10,
+            "L": 0
+          },
+          "knee_extension_prom": {
+            "R": -5,
+            "L": 0
+          }
+        },
+        "mmt": {
+          "knee_extension": {
+            "R": "3+/5",
+            "L": "5/5"
+          },
+          "knee_flexion": {
+            "R": "3+/5",
+            "L": "5/5"
+          },
+          "hip_flexion": {
+            "R": "4-/5",
+            "L": "5/5"
+          },
+          "hip_extension": {
+            "R": "4-/5",
+            "L": "4+/5"
+          },
+          "hip_abduction": {
+            "R": "3+/5",
+            "L": "4+/5"
+          }
+        },
+        "pain_vas_100mm": {
+          "rest": 20,
+          "level_walking": 40,
+          "stair_descent": 60
+        },
+        "bbs": {
+          "score": 43,
+          "max": 56
+        },
+        "tug_sec": 17.8,
+        "ten_meter_walk_mps": 0.68,
+        "patellar_circumference_cm": {
+          "R": 42,
+          "L": 39.5
+        },
+        "incision": "치유 중이며 분비물·뚜렷한 발적 없음; 경미한 열감·부종"
+      },
+      "functional_observations": {
+        "bed_mobility": "독립",
+        "sit_to_stand": "팔걸이를 사용하여 독립",
+        "indoor_walk": "짧은 거리 독립",
+        "outdoor_walk": "왼손 지팡이 사용",
+        "walk_tolerance": "5~10분 후 휴식 필요(시나리오 고정)",
+        "stairs": "난간 사용, 한 계단씩; 내려갈 때 감독 권장",
+        "lower_body_dressing": "독립이나 느림",
+        "showering": "샤워의자, 필요 시 감독",
+        "gait": "오른쪽 입각기 단축, 왼쪽 보폭 감소, 오른쪽 입각기 무릎 폄 부족"
+      },
+      "safety_flags": [
+        "감염·혈전 의심 증상 시 의료진 평가"
+      ],
+      "verification_notes": []
+    },
+    {
+      "id": "P02",
+      "identity": {
+        "name": "김민수",
+        "age": 45,
+        "sex": "남",
+        "diagnosis": "L4–L5 추간판탈출증에 따른 오른쪽 L5 신경뿌리병증",
+        "phase": "발병 후 3개월"
+      },
+      "history": {
+        "medical": [
+          "과거 요통으로 물리치료"
+        ],
+        "living": "아내와 자녀와 엘리베이터 아파트 거주",
+        "occupation": "사무직, 하루 7~8시간 앉아서 근무",
+        "red_flags_denied": [
+          "배뇨·배변 기능의 새 변화",
+          "회음부 감각 소실",
+          "빠르게 진행하는 양측 하지 약화",
+          "발열",
+          "체중감소"
+        ]
+      },
+      "subjective": {
+        "chief_complaints": [
+          "허리 통증",
+          "오른쪽 엉덩이~종아리 바깥쪽~발등 방사통과 저림"
+        ],
+        "provoking": [
+          "30분 이상 앉기",
+          "허리 굽히기",
+          "물건 들기",
+          "운전"
+        ],
+        "relieving": [
+          "누워 쉬기",
+          "자세 변경",
+          "가벼운 걷기"
+        ],
+        "goals": [
+          "1시간 앉아 일하기",
+          "통증 없이 출퇴근"
+        ]
+      },
+      "objective": {
+        "posture": "통증 회피를 위한 경미한 왼쪽 몸통 기울임",
+        "lumbar_rom_deg": {
+          "flexion": 35,
+          "extension": 15,
+          "right_lateral_flexion": 15,
+          "left_lateral_flexion": 25,
+          "right_rotation": 25,
+          "left_rotation": 30
+        },
+        "mmt": {
+          "hip_flexion": {
+            "R": "5/5",
+            "L": "5/5"
+          },
+          "knee_extension": {
+            "R": "5/5",
+            "L": "5/5"
+          },
+          "ankle_dorsiflexion": {
+            "R": "4+/5",
+            "L": "5/5"
+          },
+          "great_toe_extension": {
+            "R": "4-/5",
+            "L": "5/5"
+          },
+          "ankle_plantarflexion": {
+            "R": "5/5",
+            "L": "5/5"
+          },
+          "hip_abduction": {
+            "R": "4/5",
+            "L": "5/5"
+          }
+        },
+        "sensation": "오른쪽 L5 피부절(발등·엄지발가락) 촉각 및 핀찌르기 감소; L3/L4/S1 정상",
+        "dtr": {
+          "patellar": {
+            "R": "2+",
+            "L": "2+"
+          },
+          "achilles": {
+            "R": "2+",
+            "L": "2+"
+          }
+        },
+        "slr": {
+          "R": "45도에서 평소 방사통 재현",
+          "L": "75도까지 방사통 없음"
+        },
+        "slump": {
+          "R": "양성, 목 폄으로 증상 감소",
+          "L": "음성"
+        },
+        "repeated_motion": "굽힘 시 원위부 증상 증가, 폄 시 중심화 경향",
+        "pain_vas_100mm": {
+          "rest": 30,
+          "prolonged_sitting": 70,
+          "walking": 35
+        },
+        "odi_percent": 36
+      },
+      "functional_observations": {
+        "bed_mobility": "독립, 자세 변경 시 느림",
+        "transfers": "독립",
+        "walking": "보조도구 없이 독립",
+        "stairs": "독립",
+        "sitting_tolerance": "20~30분",
+        "driving": "30분 이상 시 증상 악화",
+        "walking_tolerance": "15~20분 산책 가능",
+        "dressing": "양말·신발 착용 시 굽힘 통증",
+        "work": "근무 가능하나 빈번한 자세 변경 필요"
+      },
+      "safety_flags": [
+        "마미증후군 및 진행성 근력저하의 응급 징후 확인"
+      ],
+      "verification_notes": []
+    },
+    {
+      "id": "P03",
+      "identity": {
+        "name": "이정훈",
+        "age": 58,
+        "sex": "남",
+        "diagnosis": "오른쪽 극상근 전층파열에 대한 관절경적 회전근개 봉합술",
+        "phase": "수술 후 8주"
+      },
+      "history": {
+        "medical": [
+          "약물로 조절 중인 고혈압"
+        ],
+        "living": "아내와 엘리베이터 아파트 거주",
+        "occupation": "식당 운영",
+        "surgical_precautions": "집도의가 보호된 PROM/AAROM/가벼운 AROM 허용; 봉합부에 강한 저항과 무거운 물건 들기 금지"
+      },
+      "subjective": {
+        "chief_complaints": [
+          "팔을 올릴 때 어깨 가쪽 통증",
+          "뻣뻣함",
+          "머리 감기와 옷 입기 어려움",
+          "야간 불편감"
+        ],
+        "goals": [
+          "독립적인 머리 감기와 옷 입기",
+          "식당 업무 복귀"
+        ],
+        "concerns": "재파열에 대한 걱정"
+      },
+      "objective": {
+        "posture": "오른쪽 어깨 보호자세, 팔 올릴 때 어깨뼈 거상과 몸통 기울임",
+        "shoulder_rom_deg": {
+          "flexion": {
+            "R_AROM": 95,
+            "R_PROM": 135,
+            "L_AROM": 170
+          },
+          "abduction": {
+            "R_AROM": 75,
+            "R_PROM": 110,
+            "L_AROM": 170
+          },
+          "external_rotation_arm_at_side": {
+            "R_AROM": 25,
+            "R_PROM": 40,
+            "L_AROM": 75
+          },
+          "internal_rotation_arm_at_side": {
+            "R_AROM": 45,
+            "R_PROM": 55,
+            "L_AROM": 70
+          }
+        },
+        "mmt": {
+          "right_shoulder_resisted": "수술 후 보호로 최대 저항 MMT 보류",
+          "elbow_flexion": {
+            "R": "4+/5",
+            "L": "5/5"
+          },
+          "elbow_extension": {
+            "R": "5/5",
+            "L": "5/5"
+          },
+          "wrist_extension": {
+            "R": "5/5",
+            "L": "5/5"
+          }
+        },
+        "grip_kg": {
+          "R": 29,
+          "L": 35
+        },
+        "pain_vas_100mm": {
+          "rest": 10,
+          "arm_elevation": 40,
+          "dressing": 50,
+          "night": 30
+        },
+        "sensation": "양측 상지 정상",
+        "incision": "치유, 감염 징후 없음",
+        "quickdash": {
+          "score": 56.8,
+          "max": 100,
+          "status": "provisional_requires_item_level_responses"
+        }
+      },
+      "functional_observations": {
+        "walking_stairs": "독립",
+        "grooming": "머리 감기는 왼손 중심",
+        "dressing": "상의 독립이나 시간 증가",
+        "reaching": "어깨 높이 이상의 오른손 작업 제한",
+        "lifting": "수술 후 보호 지침에 따라 제한",
+        "driving": "집도의 허가 전 재개 보류",
+        "work": "가벼운 작업 일부 가능, 식자재 운반 및 반복 상지 거상 제한"
+      },
+      "safety_flags": [
+        "저항성 회전근개 검사 및 강한 신장·무거운 들기 금지"
+      ],
+      "verification_notes": [
+        "QuickDASH 11문항 응답을 생성해 총점 검증 필요"
+      ]
+    },
+    {
+      "id": "P04",
+      "identity": {
+        "name": "최성호",
+        "age": 62,
+        "sex": "남",
+        "diagnosis": "당뇨병성 족부 감염 후 왼쪽 하퇴절단(BKA/TTA)",
+        "phase": "수술 후 10주, 의지 착용 전"
+      },
+      "history": {
+        "medical": [
+          "제2형 당뇨병 15년",
+          "고혈압",
+          "말초신경병증"
+        ],
+        "living": "배우자와 단독주택 거주, 현관 2계단과 욕실 문턱",
+        "occupation": "경비 업무 휴직",
+        "prosthesis": "아직 의지 없음"
+      },
+      "subjective": {
+        "chief_complaints": [
+          "혼자 이동하기 어려움",
+          "절단단 불편감",
+          "간헐적 환상통"
+        ],
+        "goals": [
+          "독립적인 화장실 이용",
+          "의지 착용 후 보행",
+          "외출"
+        ],
+        "concerns": "의지 착용 시기와 다시 걸을 수 있는지 걱정"
+      },
+      "objective": {
+        "residual_limb": {
+          "level": "왼쪽 하퇴절단",
+          "length_below_knee_cm": 14,
+          "skin": "수술상처 치유, 발적·분비물 없음",
+          "scar": "부분 유착",
+          "edema": "말단 경미한 부종",
+          "tenderness": "앞쪽 말단 경미한 압통"
+        },
+        "pain_vas_100mm": {
+          "residual_limb": 20,
+          "phantom_intermitent": 40
+        },
+        "rom_deg": {
+          "hip_flexion": {
+            "L": 110,
+            "R": 120
+          },
+          "hip_extension": {
+            "L": 5,
+            "R": 15
+          },
+          "hip_abduction": {
+            "L": 35,
+            "R": 40
+          },
+          "knee_flexion": {
+            "L": 120,
+            "R": 135
+          },
+          "knee_extension": {
+            "L": -10,
+            "R": 0
+          }
+        },
+        "mmt": {
+          "hip_flexion": {
+            "L": "4/5",
+            "R": "5/5"
+          },
+          "hip_extension": {
+            "L": "3+/5",
+            "R": "4+/5"
+          },
+          "hip_abduction": {
+            "L": "3+/5",
+            "R": "4+/5"
+          },
+          "knee_extension": {
+            "L": "4-/5",
+            "R": "5/5"
+          },
+          "knee_flexion": {
+            "L": "4/5",
+            "R": "5/5"
+          }
+        },
+        "contralateral_foot": {
+          "monofilament_10g": "4개 검사점 중 2개에서 보호감각 소실(교육용 단순화)",
+          "vibration": "엄지발가락에서 감소",
+          "skin": "현재 궤양 없음",
+          "dorsalis_pedis": "촉지되나 약함"
+        },
+        "balance": "앉은 자세 정적·동적 독립; 보행기 지지하 선 자세 30초",
+        "ampnopro": {
+          "score": 17,
+          "max": 43,
+          "status": "provisional_requires_item_level_scoring"
+        },
+        "mbi": {
+          "score": 72,
+          "max": 100,
+          "status": "provisional_requires_item_level_scoring"
+        }
+      },
+      "functional_observations": {
+        "bed_mobility": "독립",
+        "bed_to_wheelchair": "감독",
+        "sit_to_stand": "팔걸이·보행기 이용, 감독",
+        "wheelchair": "평지 실내 독립",
+        "walker": "의지 없이 약 5m, 감독하 제한적 이동",
+        "outdoor": "휠체어 및 도움 필요",
+        "stairs": "현재 독립 수행 불가",
+        "toileting": "이동 시 감독",
+        "upper_dressing": "독립",
+        "lower_dressing": "서서 정리 시 도움",
+        "bathing": "샤워의자와 도움"
+      },
+      "safety_flags": [
+        "건측 발에 반복적인 한발 뛰기식 보행을 주요 이동수단으로 권장하지 않음",
+        "의지 착용은 절단단·전신상태 및 전문팀 평가 후 결정"
+      ],
+      "verification_notes": [
+        "AMPnoPRO 및 MBI 세부 문항 점수 필요"
+      ]
+    },
+    {
+      "id": "P05",
+      "identity": {
+        "name": "한정희",
+        "age": 67,
+        "sex": "여",
+        "diagnosis": "오른쪽 중간대뇌동맥(MCA) 영역 허혈성 뇌졸중",
+        "phase": "발병 후 8주"
+      },
+      "history": {
+        "medical": [
+          "고혈압",
+          "이상지질혈증"
+        ],
+        "living": "남편과 엘리베이터 아파트 거주",
+        "premorbid": "발병 전 ADL 및 보행 독립"
+      },
+      "subjective": {
+        "chief_complaints": [
+          "왼쪽 팔·다리 약화",
+          "왼쪽 감각 저하",
+          "왼쪽 어깨 통증"
+        ],
+        "awareness": "왼쪽 공간을 놓치는 문제를 과소평가함",
+        "goals": [
+          "화장실 이동 독립",
+          "집 안 보행"
+        ],
+        "communication": "기본 언어 이해와 표현 보존"
+      },
+      "objective": {
+        "rom_deg": {
+          "shoulder_flexion": {
+            "L_AROM": 60,
+            "L_PROM": 145,
+            "R_AROM": 170
+          },
+          "shoulder_abduction": {
+            "L_AROM": 45,
+            "L_PROM": 120,
+            "R_AROM": 170
+          },
+          "elbow_flexion": {
+            "L_AROM": 100,
+            "L_PROM": 140,
+            "R_AROM": 145
+          },
+          "wrist_extension": {
+            "L_AROM": 10,
+            "L_PROM": 60,
+            "R_AROM": 70
+          },
+          "hip_flexion": {
+            "L_AROM": 85,
+            "L_PROM": 115,
+            "R_AROM": 120
+          },
+          "knee_flexion": {
+            "L_AROM": 100,
+            "L_PROM": 130,
+            "R_AROM": 135
+          },
+          "knee_extension": {
+            "L_AROM": -5,
+            "L_PROM": 0,
+            "R_AROM": 0
+          },
+          "ankle_dorsiflexion": {
+            "L_AROM": -5,
+            "L_PROM": 10,
+            "R_AROM": 15
+          }
+        },
+        "mmt": {
+          "shoulder_flexion": {
+            "L": "2+/5",
+            "R": "5/5"
+          },
+          "shoulder_abduction": {
+            "L": "2/5",
+            "R": "5/5"
+          },
+          "elbow_flexion": {
+            "L": "3-/5",
+            "R": "5/5"
+          },
+          "elbow_extension": {
+            "L": "2+/5",
+            "R": "5/5"
+          },
+          "wrist_extension": {
+            "L": "2-/5",
+            "R": "5/5"
+          },
+          "hip_flexion": {
+            "L": "3-/5",
+            "R": "5/5"
+          },
+          "hip_extension": {
+            "L": "3/5",
+            "R": "5/5"
+          },
+          "hip_abduction": {
+            "L": "2+/5",
+            "R": "5/5"
+          },
+          "knee_extension": {
+            "L": "3+/5",
+            "R": "5/5"
+          },
+          "knee_flexion": {
+            "L": "3-/5",
+            "R": "5/5"
+          },
+          "ankle_dorsiflexion": {
+            "L": "2-/5",
+            "R": "5/5"
+          }
+        },
+        "mas_left": {
+          "elbow_flexors": "1+",
+          "wrist_flexors": "1+",
+          "finger_flexors": "1",
+          "knee_extensors": "1",
+          "ankle_plantarflexors": "1+"
+        },
+        "sensation": "왼쪽 촉각·통각·위치감각 저하, 양측 동시 촉각 시 왼쪽 소거",
+        "reflexes": "왼쪽 DTR 3+, 오른쪽 2+; 왼쪽 Babinski 양성",
+        "fma_motor": {
+          "upper": 24,
+          "upper_max": 66,
+          "lower": 20,
+          "lower_max": 34,
+          "total": 44,
+          "max": 100
+        },
+        "bbs": {
+          "score": 19,
+          "max": 56
+        },
+        "neglect": {
+          "line_bisection": "20cm 선 5개에서 중앙보다 평균 오른쪽 3.5cm",
+          "line_cancellation": "왼쪽 선 18개 중 11개 누락"
+        },
+        "vision": "뚜렷한 동측반맹 없음(가상 설정)",
+        "face": "왼쪽 아래얼굴 경미한 약화",
+        "pain_vas_100mm": {
+          "shoulder_rest": 20,
+          "shoulder_passive_flexion": 50
+        },
+        "mbi": {
+          "score": 48,
+          "max": 100,
+          "status": "provisional_requires_item_level_scoring"
+        },
+        "fac": 1
+      },
+      "functional_observations": {
+        "bed_mobility": "감독 또는 약간의 도움",
+        "supine_to_sit": "최소 도움",
+        "sitting": "독립",
+        "sit_to_stand": "최소 도움",
+        "transfer": "최소 도움",
+        "walking": "평행봉 안 약 5m, 지속적인 신체적 도움",
+        "wheelchair": "왼쪽 장애물 충돌 위험으로 감독",
+        "stairs": "불가",
+        "eating": "오른손 사용, 왼쪽 음식 누락 가능",
+        "dressing": "중등도 도움",
+        "toileting": "최소~중등도 도움",
+        "bathing": "상당한 도움"
+      },
+      "safety_flags": [
+        "마비측 어깨를 잡아당기지 않음",
+        "편측무시로 인한 낙상·충돌 위험"
+      ],
+      "verification_notes": [
+        "FMA·BBS·MBI 세부 문항 채점표와 총점 검증 필요"
+      ]
+    },
+    {
+      "id": "P06",
+      "identity": {
+        "name": "정우진",
+        "age": 32,
+        "sex": "남",
+        "diagnosis": "교통사고 후 외상성 불완전 척수손상, 신경학적 수준 L1, AIS D",
+        "phase": "손상 후 12주"
+      },
+      "history": {
+        "medical": [
+          "신경인성 방광·장 기능장애"
+        ],
+        "living": "부모와 엘리베이터 아파트 거주",
+        "occupation": "사무직 휴직",
+        "upper_limb": "상지 기능 정상"
+      },
+      "subjective": {
+        "chief_complaints": [
+          "양측 하지 근력 및 감각 저하(왼쪽 더 심함)",
+          "균형·보행 불안",
+          "배뇨 후 잔뇨감"
+        ],
+        "goals": [
+          "보행기 없이 걷기",
+          "대중교통 이용",
+          "직장 복귀"
+        ]
+      },
+      "objective": {
+        "rom_deg": {
+          "hip_flexion": {
+            "R": 115,
+            "L": 110
+          },
+          "hip_extension": {
+            "R": 10,
+            "L": 5
+          },
+          "hip_abduction": {
+            "R": 40,
+            "L": 35
+          },
+          "knee_flexion": {
+            "R": 135,
+            "L": 130
+          },
+          "knee_extension": {
+            "R": 0,
+            "L": 0
+          },
+          "ankle_dorsiflexion": {
+            "R": 10,
+            "L": 5
+          }
+        },
+        "mmt": {
+          "hip_flexion": {
+            "R": "4/5",
+            "L": "3+/5"
+          },
+          "knee_extension": {
+            "R": "4+/5",
+            "L": "4/5"
+          },
+          "ankle_dorsiflexion": {
+            "R": "4/5",
+            "L": "3/5"
+          },
+          "great_toe_extension": {
+            "R": "3+/5",
+            "L": "2+/5"
+          },
+          "ankle_plantarflexion": {
+            "R": "3+/5",
+            "L": "3/5"
+          },
+          "hip_extension": {
+            "R": "4-/5",
+            "L": "3+/5"
+          },
+          "hip_abduction": {
+            "R": "4-/5",
+            "L": "3/5"
+          }
+        },
+        "isncsci": {
+          "nli": "L1",
+          "ais": "D",
+          "lems": {
+            "R": 18,
+            "L": 15,
+            "total": 33,
+            "max": 50
+          },
+          "key_muscles": {
+            "L2": {
+              "R": 4,
+              "L": 3
+            },
+            "L3": {
+              "R": 4,
+              "L": 4
+            },
+            "L4": {
+              "R": 4,
+              "L": 3
+            },
+            "L5": {
+              "R": 3,
+              "L": 2
+            },
+            "S1": {
+              "R": 3,
+              "L": 3
+            }
+          },
+          "sensation": "L1까지 양측 정상, L2~S4-5에서 양측 경도 저하(촉각·핀찌르기 1)",
+          "sacral_sparing": "S4-5 감각 보존, 자발적 항문수축 있음",
+          "status": "provisional_full_isncsci_worksheet_required"
+        },
+        "mas": {
+          "left_hip_adductors": "1",
+          "left_knee_flexors": "1",
+          "ankle_plantarflexors": {
+            "R": "1",
+            "L": "1+"
+          }
+        },
+        "reflexes": "왼쪽 무릎 3+, 양쪽 아킬레스 3+, 바빈스키 양성(교육용 설정)",
+        "bbs": {
+          "score": 35,
+          "max": 56
+        },
+        "ten_meter_walk_mps": 0.48,
+        "six_min_walk_m": 145,
+        "tug_sec": 25.4,
+        "gait_test_conditions": "전방 보행기 및 왼쪽 AFO 사용, 감독하",
+        "wisci_ii": {
+          "score": null,
+          "status": "not_assigned_until_exact_aid_brace_assistance_mapping"
+        },
+        "pain_vas_100mm": {
+          "rest_back": 20,
+          "post_walk_back": 40,
+          "foot_paresthesia": 30
+        },
+        "scim_iii": {
+          "self_care": 17,
+          "respiration_sphincter": 22,
+          "mobility": 22,
+          "total": 61,
+          "max": 100,
+          "status": "provisional_requires_item_level_scoring"
+        }
+      },
+      "functional_observations": {
+        "bed_mobility": "독립",
+        "transfers": "독립",
+        "sit_to_stand": "지지물 이용하여 독립",
+        "indoor_walk": "전방 보행기와 왼쪽 AFO, 감독 필요",
+        "outdoor_walk": "평탄한 곳에서 제한적, 감독",
+        "stairs": "난간과 도움 필요",
+        "wheelchair": "장거리 독립",
+        "basic_adl": "대부분 독립",
+        "bathing": "샤워의자, 감독",
+        "bladder_bowel": "시간 맞춘 관리 및 의료진 추적 필요",
+        "work": "이동 제한으로 복귀 어려움"
+      },
+      "safety_flags": [
+        "방광·장 문제는 전문 평가와 협진",
+        "낙상 예방"
+      ],
+      "verification_notes": [
+        "ISNCSCI 전체 피부절/근육절 및 VAC·DAP 기록과 NLI/AIS 분류 검증 필수",
+        "WISCI II 점수 미확정",
+        "SCIM III 세부 문항 검증 필요"
+      ]
+    },
+    {
+      "id": "P07",
+      "identity": {
+        "name": "오지훈",
+        "age": 27,
+        "sex": "남",
+        "diagnosis": "교통사고 후 외상성 뇌손상: 전두엽·측두엽 뇌좌상 및 미만성 축삭손상",
+        "phase": "손상 후 10주"
+      },
+      "history": {
+        "medical": [
+          "급성기 중환자 치료"
+        ],
+        "living": "부모와 엘리베이터 아파트 거주",
+        "occupation": "대학원생, 아르바이트 휴직"
+      },
+      "subjective": {
+        "chief_complaints": [
+          "집중력·최근 기억력 저하",
+          "두통",
+          "쉽게 피로함",
+          "복잡한 곳에서 불안정"
+        ],
+        "awareness": "독립 외출 위험을 과소평가",
+        "goals": [
+          "대중교통 이용",
+          "학업 복귀",
+          "혼자 외출"
+        ]
+      },
+      "objective": {
+        "gcs": {
+          "initial": {
+            "E": 2,
+            "V": 2,
+            "M": 4,
+            "total": 8,
+            "context": "기도관리·진정제 투여 이전"
+          },
+          "current": {
+            "E": 4,
+            "V": 5,
+            "M": 6,
+            "total": 15
+          }
+        },
+        "rancho_los_amigos": {
+          "level": "VI",
+          "label": "Confused–Appropriate"
+        },
+        "rom": "사지 주요 관절 대체로 정상",
+        "mmt": {
+          "upper_limbs": "5/5",
+          "hip_flexion": "양측 4+/5",
+          "hip_abduction": {
+            "R": "4+/5",
+            "L": "4/5"
+          },
+          "knee_extension": "양측 5/5",
+          "ankle_dorsiflexion": "양측 5/5"
+        },
+        "mas": "양측 0",
+        "dtr": "무릎·아킬레스 양측 2+, 바빈스키 음성",
+        "sensation": "촉각·통각·위치감각 양측 정상",
+        "coordination": "왼쪽 손가락-코·발꿈치-정강이 경미한 오차, 일자보행 10걸음 중 3회 균형 상실",
+        "bbs": {
+          "score": 46,
+          "max": 56
+        },
+        "ten_meter_walk_mps": 0.95,
+        "tug_sec": 12.8,
+        "dual_task_tug_sec": 19.6,
+        "dual_task_cost_percent": 53.1,
+        "moca": {
+          "score": 21,
+          "max": 30,
+          "features": [
+            "주의력 저하",
+            "최근 기억 저하",
+            "실행기능 저하"
+          ]
+        },
+        "pain_vas_100mm": {
+          "headache_rest": 20,
+          "after_concentration": 50
+        },
+        "mbi": {
+          "score": 92,
+          "max": 100,
+          "status": "provisional_requires_item_level_scoring"
+        }
+      },
+      "functional_observations": {
+        "bed_mobility_transfers": "독립",
+        "indoor_walk": "익숙한 환경 독립",
+        "outdoor_walk": "복잡한 환경 감독",
+        "stairs": "난간 사용 권장, 급한 움직임 주의",
+        "basic_adl": "대부분 독립",
+        "bathing": "감독 권장",
+        "shopping": "목록 누락 및 충동적 선택",
+        "public_transport": "노선 변경·복잡한 상황에서 도움 필요",
+        "study": "집중력·기억력·피로로 제한",
+        "dual_task": "대화하며 걸을 때 속도 감소·휘청임"
+      },
+      "safety_flags": [
+        "GCS 15점은 고차 인지기능 정상의 의미가 아님"
+      ],
+      "verification_notes": [
+        "Rancho VI와 현재 독립적 활동 수준의 일치 여부 재검토",
+        "MBI 세부 문항 점수 필요"
+      ]
+    }
+  ]
+}
