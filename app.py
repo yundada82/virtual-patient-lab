@@ -4,6 +4,8 @@ The JSON shipped to students MUST NOT include instructor_only fields.
 """
 import json
 import re
+import time
+import random
 from io import BytesIO
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -157,6 +159,41 @@ def system_prompt(p):
             "환자 설정(JSON): " + json.dumps(known, ensure_ascii=False))
 
 
+def quick_fact_answer(p, question):
+    """Answer only tightly matched factual questions; all ambiguous questions go to Gemini."""
+    q = re.sub(r"\s+", "", question).lower()
+    identity = p["identity"]
+    phase = identity["phase"]
+    diagnosis = identity["diagnosis"]
+    if ("수술" in q and any(t in q for t in ("언제", "얼마나", "몇주", "며칠", "몇달", "몇개월", "몇년"))
+            and phase.startswith("수술 후")):
+        side = "오른쪽" if "오른쪽" in diagnosis else "왼쪽" if "왼쪽" in diagnosis else ""
+        return f"{side} 수술받은 지 이제 {phase.removeprefix('수술 후 ').split(',')[0]} 정도 됐어요."
+    if any(t in q for t in ("몇살", "나이가어떻게", "연세가어떻게", "연세는", "나이는")):
+        return f"저는 {identity['age']}살이에요."
+    if any(t in q for t in ("사고난지얼마나", "다친지얼마나", "발병한지얼마나")) and phase.startswith(("손상 후", "발병 후")):
+        return f"{phase.replace('손상 후', '다친 지').replace('발병 후', '증상이 시작된 지')} 됐어요."
+    return None
+
+
+def request_patient_reply(history, prompt):
+    """Retry only temporary 503 failures, with bounded backoff."""
+    from google.genai import errors
+    for attempt in range(3):
+        try:
+            return client.models.generate_content(
+                model="gemini-3.8-flash", contents=history,
+                config=types.GenerateContentConfig(
+                    system_instruction=prompt, temperature=0.2, max_output_tokens=900),
+            )
+        except errors.APIError as exc:
+            code = getattr(exc, "code", None)
+            if code == 503 and attempt < 2:
+                time.sleep(min(2 ** attempt, 4) + random.uniform(0, 0.4))
+                continue
+            raise
+
+
 st.subheader("💬 환자 문진")
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
@@ -176,26 +213,33 @@ if question := st.chat_input("환자에게 문진하거나 의무기록을 요�
     elif seems_like_exam(question):
         answer = "검사 결과는 아래 '추가 검사 시행' 메뉴에서 해당 검사를 선택하면 확인할 수 있습니다."
     else:
-        history = [types.Content(role="user" if m["role"] == "user" else "model",
-                                 parts=[types.Part(text=m["content"])])
-                   for m in st.session_state.messages[-16:]]
-        try:
-            response = client.models.generate_content(
-                model="gemini-3.8-flash", contents=history,
-                config=types.GenerateContentConfig(system_instruction=system_prompt(patient),
-                                                   temperature=0.2, max_output_tokens=900),
-            )
-            answer = (response.text or "").strip()
-            if not answer:
-                answer = "죄송해요, 다시 질문해 주시겠어요?"
-            elif getattr(response, "candidates", None):
-                finish = getattr(response.candidates[0], "finish_reason", None)
-                if finish and "MAX_TOKENS" in str(finish):
-                    print("Gemini 응답이 토큰 제한으로 중단됨", flush=True)
-                    answer = "죄송해요. 말씀을 다시 정리해서 답해 드릴게요. 질문을 한 번 더 해주시겠어요?"
-        except Exception as exc:
-            print(f"Gemini API 오류: {type(exc).__name__}: {exc}", flush=True)
-            answer = "현재 환자 응답을 생성하지 못했습니다. 잠시 후 다시 시도하거나 관리자에게 알려 주세요."
+        fixed_answer = quick_fact_answer(patient, question)
+        if fixed_answer is not None:
+            answer = fixed_answer
+        else:
+            history = [types.Content(role="user" if m["role"] == "user" else "model",
+                                     parts=[types.Part(text=m["content"])])
+                       for m in st.session_state.messages[-16:]]
+            try:
+                with st.spinner("환자가 답변하고 있습니다..."):
+                    response = request_patient_reply(history, system_prompt(patient))
+                answer = (response.text or "").strip()
+                if not answer:
+                    answer = "죄송해요, 다시 질문해 주시겠어요?"
+                elif getattr(response, "candidates", None):
+                    finish = getattr(response.candidates[0], "finish_reason", None)
+                    if finish and "MAX_TOKENS" in str(finish):
+                        print("Gemini 응답이 토큰 제한으로 중단됨", flush=True)
+                        answer = "죄송해요. 말씀을 다시 정리해서 답해 드릴게요. 질문을 한 번 더 해주시겠어요?"
+            except Exception as exc:
+                print(f"Gemini API 오류: {type(exc).__name__}: {exc}", flush=True)
+                code = getattr(exc, "code", None)
+                if code == 503:
+                    answer = "지금 잠시 연결이 원활하지 않아요. 조금 뒤에 같은 질문을 다시 해주세요."
+                elif code == 429:
+                    answer = "현재 AI 요청 한도에 도달했어요. 잠시 후 다시 시도해 주세요."
+                else:
+                    answer = "현재 환자 응답을 생성하지 못했습니다. 잠시 후 다시 시도하거나 관리자에게 알려 주세요."
     st.session_state.messages.append({"role": "assistant", "content": answer})
     with st.chat_message("assistant"):
         st.write(answer)
