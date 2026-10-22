@@ -207,7 +207,25 @@ def request_patient_reply(history, prompt):
             raise
 
 
+st.markdown("""
+<style>
+/* 문진 입력창을 주변 영역과 명확히 구별 */
+div[data-testid="stChatInput"] {
+    border: 2px solid #2678c8;
+    border-radius: 14px;
+    background: #eef6ff;
+    box-shadow: 0 0 0 3px rgba(38, 120, 200, 0.10);
+}
+div[data-testid="stChatInput"] textarea {
+    background: transparent;
+}
+div[data-testid="stChatInput"] button {
+    color: #1765b0;
+}
+</style>
+""", unsafe_allow_html=True)
 st.subheader("💬 환자 문진")
+st.info("💬 **환자에게 질문하기:** 화면 아래의 파란색 테두리 입력창에 질문을 쓰고 Enter를 누르세요.")
 st.caption("환자에게 직접 질문해 보세요. 질문한 내용만 답변합니다. 검사 결과는 아래 검사 메뉴에서 확인할 수 있습니다.")
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
@@ -269,9 +287,26 @@ st.divider()
 st.subheader("🔎 추가 검사 시행")
 st.caption("필요하다고 판단한 검사를 선택하고, 선택 이유를 작성한 뒤 결과를 확인하세요.")
 keys = list(patient["objective"])
+
+# 검사 선택은 form 밖에 두어 변경 즉시 이유 입력창을 초기화합니다.
+# (Streamlit form 내부의 selectbox에는 on_change 콜백을 사용할 수 없습니다.)
+def clear_exam_reason():
+    st.session_state.exam_reason = ""
+
+if st.session_state.get("exam_patient_id") != selected:
+    st.session_state.exam_patient_id = selected
+    st.session_state.exam_reason = ""
+    st.session_state.exam_choice = keys[0]
+
+chosen = st.selectbox(
+    "시행할 검사", keys, format_func=lambda k: LABELS.get(k, k),
+    key="exam_choice", on_change=clear_exam_reason
+)
 with st.form("exam_form"):
-    chosen = st.selectbox("시행할 검사", keys, format_func=lambda k: LABELS.get(k, k))
-    reason = st.text_area("검사 선택 이유", placeholder="문진에서 얻은 정보와 연결해 작성하세요.")
+    reason = st.text_area(
+        "검사 선택 이유", key="exam_reason",
+        placeholder="문진에서 얻은 정보와 연결해 작성하세요."
+    )
     submitted = st.form_submit_button("검사 시행 및 결과 확인")
 if submitted:
     if not reason.strip():
@@ -290,7 +325,7 @@ if st.session_state.exam_log:
 st.divider()
 st.subheader("✍️ A. Assessment / P. Plan 작성")
 st.caption("수집한 S·O 정보를 종합하여 직접 작성하세요. AI는 평가·치료계획의 정답을 제공하지 않습니다.")
-st.text_input("조 / 학번", key="student_group")
+st.text_input("조 이름", key="student_group", placeholder="예: 1조")
 st.text_input("학생 이름", key="student_names")
 st.text_area("A — Assessment", key="assessment", height=190, placeholder="문제 목록, 우선순위, 검사 결과를 통합한 임상적 판단")
 st.text_area("P — Plan", key="plan", height=190, placeholder="치료 목표, 중재 및 근거, 재평가 계획")
@@ -312,7 +347,7 @@ def make_pdf():
             story.append(Paragraph(escape(line) if line.strip() else " ", normal))
 
     add_lines(f"환자: {identity['name']} / {identity['diagnosis']}")
-    add_lines("조 / 학번: " + st.session_state.student_group)
+    add_lines("조 이름: " + st.session_state.student_group)
     add_lines("학생 이름: " + st.session_state.student_names)
     story.append(Paragraph("S. Subjective - 문진 기록", heading))
     for msg in st.session_state.messages:
