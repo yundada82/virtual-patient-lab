@@ -100,11 +100,25 @@ def new_session(case_id):
     st.session_state.student_names = ""
 
 
-case_ids = list(PATIENTS)
-selected = st.selectbox("실습 환자 선택", case_ids,
-                        format_func=lambda cid: f"{cid} · {PATIENTS[cid]['identity']['name']} — {PATIENTS[cid]['identity']['diagnosis']}")
-if st.session_state.get("active_case") != selected:
-    new_session(selected)
+# 학생은 배정된 환자 이름만 입력합니다. 다른 환자 목록은 보여주지 않습니다.
+name_to_id = {p["identity"]["name"].replace(" ", ""): cid for cid, p in PATIENTS.items()}
+st.subheader("실습 환자 불러오기")
+with st.form("patient_lookup"):
+    typed_name = st.text_input("담당 환자의 이름을 입력하세요", placeholder="예: 박영숙")
+    lookup = st.form_submit_button("환자 불러오기")
+if lookup:
+    normalized_name = re.sub(r"\s+", "", typed_name)
+    matched = name_to_id.get(normalized_name)
+    if matched:
+        new_session(matched)
+        st.rerun()
+    else:
+        st.warning("해당 이름의 환자를 찾지 못했습니다. 배정받은 환자 이름을 확인해 주세요.")
+
+selected = st.session_state.get("active_case")
+if not selected or selected not in PATIENTS:
+    st.info("배정받은 환자 이름을 입력하고 '환자 불러오기'를 눌러 주세요.")
+    st.stop()
 patient = PATIENTS[selected]
 identity = patient["identity"]
 st.info(f"환자: {identity['name']} / {identity['age']}세 / {identity['sex']} / "
@@ -132,7 +146,8 @@ def system_prompt(p):
              "subjective": p["subjective"], "functional_observations": p["functional_observations"],
              "safety_flags": p["safety_flags"]}
     return ("당신은 물리치료학과 교육용 가상 환자입니다. 아래 설정은 환자가 알고 있는 사실입니다. "
-            "학생 질문에 환자의 말투로 1~3문장만 자연스럽게 대답하세요. "
+            "학생 질문에 환자의 말투로 자연스럽고 완결된 한국어 문장 1~3개로 대답하세요. "
+            "질문이 언제인지 물으면 기록된 시기를 구체적으로 답하고, 질문에 직접 답하는 문장으로 끝내세요. "
             "묻지 않은 내용을 나열하지 말고, 설정에 없는 사실·수치·검사 결과를 만들지 마세요. "
             "학생에게 의학적 해석, 평가 정답, 치료계획을 제공하지 마세요. "
             "검사 요청에는 수치를 생성하지 말고 '검사 결과는 검사 시행 메뉴에서 확인해 주세요'라고 답하세요. "
@@ -168,9 +183,16 @@ if question := st.chat_input("환자에게 문진하거나 의무기록을 요�
             response = client.models.generate_content(
                 model="gemini-3.8-flash", contents=history,
                 config=types.GenerateContentConfig(system_instruction=system_prompt(patient),
-                                                   temperature=0.2, max_output_tokens=260),
+                                                   temperature=0.2, max_output_tokens=900),
             )
-            answer = response.text or "죄송해요, 다시 질문해 주시겠어요?"
+            answer = (response.text or "").strip()
+            if not answer:
+                answer = "죄송해요, 다시 질문해 주시겠어요?"
+            elif getattr(response, "candidates", None):
+                finish = getattr(response.candidates[0], "finish_reason", None)
+                if finish and "MAX_TOKENS" in str(finish):
+                    print("Gemini 응답이 토큰 제한으로 중단됨", flush=True)
+                    answer = "죄송해요. 말씀을 다시 정리해서 답해 드릴게요. 질문을 한 번 더 해주시겠어요?"
         except Exception as exc:
             print(f"Gemini API 오류: {type(exc).__name__}: {exc}", flush=True)
             answer = "현재 환자 응답을 생성하지 못했습니다. 잠시 후 다시 시도하거나 관리자에게 알려 주세요."
