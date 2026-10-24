@@ -456,6 +456,7 @@ with chat_col:
 
 with result_col:
     st.subheader("📋 기본 진료 기록")
+    st.markdown("<div style='height: 16px'></div>", unsafe_allow_html=True)
     if not st.session_state.report_requested:
         if st.button("확인하기", key="request_basic_record", use_container_width=True):
             st.session_state.report_requested = True
@@ -466,6 +467,7 @@ with result_col:
                 st.write(record_line)
 
     st.subheader("🩺 의학적 검사")
+    st.markdown("<div style='height: 16px'></div>", unsafe_allow_html=True)
     medical_record = MEDICAL_RECORDS.get(selected)
     if medical_record:
         if not st.session_state.medical_test_log:
@@ -484,8 +486,7 @@ with result_col:
     else:
         st.caption("의학적 검사 기록이 등록되지 않았습니다.")
 
-    st.subheader("🧪 추가 검사")
-    st.caption("물리치료 평가: ROM, MMT, 감각·균형·보행검사 등")
+    st.subheader("🧪 추가 검사(물리치료 평가)")
     st.caption("필요한 검사를 선택하고 선택 이유를 작성하세요.")
     keys = list(patient["objective"])
 
