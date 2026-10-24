@@ -234,9 +234,9 @@ st.markdown("""
 .st-key-patient_header { margin-bottom: 16px; }
 /* 오른쪽 임상적 판단 제목과 조 이름 입력란 분리 */
 .st-key-soap_heading { margin-bottom: 12px; }
-/* 실제 Streamlit 컨테이너 기본 높이도 늘리고, 뷰포트에 맞춰 문진 영역을 확장합니다. */
+/* 상단 환자정보·하단 입력창 공간을 확보한 뒤 남는 화면 높이만 대화기록에 할당합니다. */
 .st-key-chat_history [data-testid="stVerticalBlockBorderWrapper"] {
-    height: clamp(220px, calc(100dvh - 320px), 1050px) !important;
+    height: clamp(220px, calc(100dvh - 540px), 760px) !important;
     max-height: none;
     overflow-y: auto !important;
 }
@@ -249,7 +249,7 @@ div[data-testid="stChatInput"] textarea { background: transparent; }
 @media (max-height: 700px) {
     .vpl-title { font-size: 1.35rem; margin-bottom: .4rem; }
     .st-key-chat_history [data-testid="stVerticalBlockBorderWrapper"] {
-        height: clamp(180px, calc(100dvh - 310px), 450px) !important;
+        height: clamp(180px, calc(100dvh - 490px), 340px) !important;
         max-height: none;
     }
 }
@@ -286,7 +286,7 @@ with chat_col:
         st.session_state.new_notice = None
 
     # 대화창만 스크롤되고, 환자 정보와 입력창은 바깥에 남습니다.
-    with st.container(height=600, border=True, key="chat_history"):
+    with st.container(height=380, border=True, key="chat_history"):
         # 이 컨테이너에만 스크롤을 적용하고, 아래 질문 입력창은 바깥에 둡니다.
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
