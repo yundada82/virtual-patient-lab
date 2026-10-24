@@ -412,9 +412,9 @@ def quick_fact_answer(p, question):
 
 
 def request_patient_reply(history, prompt):
-    """짧은 문진 답변을 위한 경량 모델 호출. 네트워크 지연 시 빠르게 오류를 표시합니다."""
+    """환자 문진 답변을 위한 Gemini 모델 호출."""
     return client.models.generate_content(
-        model="gemini-2.5-flash-lite",
+        model="gemini-2.5-flash",
         contents=history,
         config=types.GenerateContentConfig(
             system_instruction=prompt,
