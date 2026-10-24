@@ -486,7 +486,8 @@ with result_col:
     else:
         st.caption("의학적 검사 기록이 등록되지 않았습니다.")
 
-    st.subheader("🧪 추가 검사(물리치료 평가)")
+    st.subheader("🧪 추가 검사")
+    st.markdown("<div style='height: 8px'></div>", unsafe_allow_html=True)
     st.caption("필요한 검사를 선택하고 선택 이유를 작성하세요.")
     keys = list(patient["objective"])
 
