@@ -414,7 +414,7 @@ def quick_fact_answer(p, question):
 def request_patient_reply(history, prompt):
     """환자 문진 답변을 위한 Gemini 모델 호출."""
     return client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.5-flash-lite",
         contents=history,
         config=types.GenerateContentConfig(
             system_instruction=prompt,
@@ -522,7 +522,7 @@ with chat_col:
             st.caption("현재 API 키로 조회되는 모델 중 문진 답변 생성이 가능한 모델만 표시합니다. API 키는 표시되지 않습니다.")
             st.markdown("**실제 답변 생성 테스트**")
             st.caption("모델 목록 조회와 달리 실제 generateContent 요청을 보내 정상 작동 여부를 확인합니다. 테스트당 API 호출이 1회 발생합니다.")
-            test_models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.8-flash"]
+            test_models = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"]
             chosen_test_model = st.selectbox("테스트할 모델", test_models, key="gemini_probe_model")
             if st.button("선택한 모델로 짧은 답변 생성 테스트", key="probe_gemini_model"):
                 try:
