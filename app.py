@@ -19,8 +19,7 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate
 
 st.set_page_config(page_title="Virtual Patient Lab", page_icon="🩺", layout="wide")
-st.title("🩺 Virtual Patient Lab")
-st.caption("임상의사결정 실습 | 환자 문진 → 필요한 검사 시행 → A·P 작성 → 보고서 제출")
+st.markdown("<div class='vpl-title'>🩺 Virtual Patient Lab <span>임상의사결정 실습</span></div>", unsafe_allow_html=True)
 
 DATA_PATH = Path(__file__).resolve().parent / "patients.json"
 try:
@@ -208,9 +207,37 @@ def request_patient_reply(history, prompt):
 
 st.markdown("""
 <style>
-.block-container { max-width: 1850px; padding-top: 1.2rem; }
+/* 화면 높이에 따라 문진 영역이 조절되고, 상단의 불필요한 공간을 줄입니다. */
+.block-container {
+    max-width: 1850px;
+    padding-top: .45rem !important;
+    padding-bottom: .6rem !important;
+}
+.vpl-title { font-size: 1.65rem; font-weight: 750; line-height: 1.25;
+             margin: 0 0 .75rem 0; color: var(--text-color); }
+.vpl-title span { font-size: .78rem; font-weight: 400; opacity: .65; margin-left: .6rem; }
+/* Streamlit 기본 heading 간격을 줄여 화면 하단의 입력창을 확보합니다. */
+.block-container h3 { font-size: 1.18rem; padding: .15rem 0; }
+.block-container [data-testid="stVerticalBlock"] { gap: .55rem; }
+/* st.container(height=...)에 고유 key를 지정하여 대화 영역만 반응형 높이로 조정. */
+.st-key-chat_history [data-testid="stVerticalBlockBorderWrapper"] {
+    height: clamp(180px, calc(100dvh - 395px), 720px) !important;
+    max-height: calc(100dvh - 395px);
+    overflow-y: auto !important;
+}
+/* Streamlit 버전별 container DOM 차이를 고려한 보조 선택자 */
+.st-key-chat_history [data-testid="stVerticalBlockBorderWrapper"] > div {
+    max-height: 100%;
+}
 div[data-testid="stChatInput"] { border: 2px solid #2678c8; border-radius: 14px; background: #eef6ff; }
 div[data-testid="stChatInput"] textarea { background: transparent; }
+@media (max-height: 700px) {
+    .vpl-title { font-size: 1.35rem; margin-bottom: .4rem; }
+    .st-key-chat_history [data-testid="stVerticalBlockBorderWrapper"] {
+        height: clamp(150px, calc(100dvh - 360px), 480px) !important;
+        max-height: none;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -218,26 +245,33 @@ div[data-testid="stChatInput"] textarea { background: transparent; }
 result_col, chat_col, soap_col = st.columns([2.5, 5.0, 2.5], gap="medium")
 
 with chat_col:
-    # 환자 정보는 대화창 위에 항상 보이도록 별도 영역에 둡니다.
-    photo_col, detail_col = st.columns([1, 4], gap="small")
-    with photo_col:
-        photo_path = Path(__file__).resolve().parent / "images" / f"{selected}.png"
-        if photo_path.is_file():
-            st.image(str(photo_path), width="stretch")
-        else:
-            st.markdown("<div style='background:#e9f2fb;border-radius:12px;padding:12px;text-align:center;font-size:32px'>👤</div>", unsafe_allow_html=True)
-    with detail_col:
-        st.markdown(f"**{identity['name']} · {identity['age']}세 · {identity['sex']}**")
-        st.caption(f"의학적 진단: {identity['diagnosis']} · {identity['phase']}")
-    st.divider()
-    st.subheader("💬 환자 문진")
-    st.caption("질문은 즉시 표시됩니다. 의뢰 기록과 검사 결과는 왼쪽에서 확인하세요.")
+    # 환자 정보와 초기화 기능을 한 줄에 압축하여 문진 공간을 확보합니다.
+    patient_info_col, reset_col = st.columns([5, 1.3], vertical_alignment="center", gap="small")
+    with patient_info_col:
+        photo_col, detail_col = st.columns([1, 5], vertical_alignment="center", gap="small")
+        with photo_col:
+            photo_path = Path(__file__).resolve().parent / "images" / f"{selected}.png"
+            if photo_path.is_file():
+                st.image(str(photo_path), width="stretch")
+            else:
+                st.markdown("<div style='background:#e9f2fb;border-radius:9px;padding:7px;text-align:center;font-size:25px'>👤</div>", unsafe_allow_html=True)
+        with detail_col:
+            st.markdown(f"**{identity['name']} · {identity['age']}세 · {identity['sex']}**")
+            st.caption(f"{identity['diagnosis']} · {identity['phase']}")
+    with reset_col:
+        with st.popover("↻ 초기화", help="현재 환자의 실습 기록을 초기화합니다"):
+            st.warning("현재 환자의 문진, 검사, A·P 및 조 정보가 모두 삭제됩니다.")
+            if st.button("초기화 확인", type="primary", key="confirm_patient_reset"):
+                st.session_state.reset_on_next_run = True
+                st.rerun()
+    st.markdown("**💬 환자 문진**")
     if st.session_state.get("new_notice"):
         st.success(st.session_state.new_notice)
         st.session_state.new_notice = None
 
     # 대화창만 스크롤되고, 환자 정보와 입력창은 바깥에 남습니다.
-    with st.container(height=510, border=True):
+    with st.container(height=320, border=True, key="chat_history"):
+        # 이 컨테이너에만 스크롤을 적용하고, 아래 질문 입력창은 바깥에 둡니다.
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
@@ -352,25 +386,11 @@ with soap_col:
     st.subheader("✍️ 임상적 판단")
     st.text_input("조 이름", key="student_group", placeholder="예: 1조")
     st.text_input("학생 이름", key="student_names")
-    st.text_area("A — Assessment", key="assessment", height=215,
+    st.text_area("A — Assessment", key="assessment", height=155,
                  placeholder="수집한 S·O 정보를 종합한 문제점과 임상적 판단")
-    st.text_area("P — Plan", key="plan", height=215,
+    st.text_area("P — Plan", key="plan", height=155,
                  placeholder="치료 목표, 중재 및 근거, 재평가 계획")
     st.caption("A와 P는 학생이 직접 작성합니다. 검사나 문진 중에도 작성 내용이 유지됩니다.")
-    st.divider()
-    if st.button("🔄 현재 환자 실습 초기화", help="문진·검사·SOAP 기록을 처음부터 다시 시작합니다."):
-        st.session_state.confirm_reset = True
-    if st.session_state.get("confirm_reset"):
-        st.warning("현재 환자의 문진, 검사, A·P 및 조 정보가 모두 삭제됩니다. 초기화하시겠습니까?")
-        yes_col, no_col = st.columns(2)
-        with yes_col:
-            if st.button("초기화", type="primary"):
-                st.session_state.reset_on_next_run = True
-                st.rerun()
-        with no_col:
-            if st.button("취소"):
-                st.session_state.confirm_reset = False
-                st.rerun()
 
 def make_pdf():
     pdfmetrics.registerFont(UnicodeCIDFont("HYSMyeongJo-Medium"))
