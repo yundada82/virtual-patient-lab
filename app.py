@@ -19,7 +19,8 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate
 
 st.set_page_config(page_title="Virtual Patient Lab", page_icon="🩺", layout="wide")
-st.markdown("<div class='vpl-title'>🩺 Virtual Patient Lab <span>임상의사결정 실습</span></div>", unsafe_allow_html=True)
+with st.container(key="vpl_header"):
+    st.markdown("<div class='vpl-title'>🩺 Virtual Patient Lab <span>임상의사결정 실습</span></div>", unsafe_allow_html=True)
 
 DATA_PATH = Path(__file__).resolve().parent / "patients.json"
 try:
@@ -207,10 +208,20 @@ def request_patient_reply(history, prompt):
 
 st.markdown("""
 <style>
+/* 헤더를 화면 상단에 유지하여 채팅 입력에 포커스가 이동해도 제목이 사라지지 않도록 합니다. */
+.st-key-vpl_header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--background-color, #fff);
+    padding: .35rem 0 .2rem;
+    border-bottom: 1px solid rgba(128,128,128,.16);
+}
+.st-key-vpl_header .vpl-title { margin: 0; }
 /* 화면 높이에 따라 문진 영역이 조절되고, 상단의 불필요한 공간을 줄입니다. */
 .block-container {
     max-width: 1850px;
-    padding-top: .45rem !important;
+    padding-top: .9rem !important;
     padding-bottom: .6rem !important;
 }
 .vpl-title { font-size: 1.65rem; font-weight: 750; line-height: 1.25;
@@ -221,8 +232,8 @@ st.markdown("""
 .block-container [data-testid="stVerticalBlock"] { gap: .55rem; }
 /* st.container(height=...)에 고유 key를 지정하여 대화 영역만 반응형 높이로 조정. */
 .st-key-chat_history [data-testid="stVerticalBlockBorderWrapper"] {
-    height: clamp(180px, calc(100dvh - 395px), 720px) !important;
-    max-height: calc(100dvh - 395px);
+    height: clamp(180px, calc(100dvh - 440px), 650px) !important;
+    max-height: calc(100dvh - 440px);
     overflow-y: auto !important;
 }
 /* Streamlit 버전별 container DOM 차이를 고려한 보조 선택자 */
@@ -234,7 +245,7 @@ div[data-testid="stChatInput"] textarea { background: transparent; }
 @media (max-height: 700px) {
     .vpl-title { font-size: 1.35rem; margin-bottom: .4rem; }
     .st-key-chat_history [data-testid="stVerticalBlockBorderWrapper"] {
-        height: clamp(150px, calc(100dvh - 360px), 480px) !important;
+        height: clamp(150px, calc(100dvh - 410px), 420px) !important;
         max-height: none;
     }
 }
@@ -248,13 +259,13 @@ with chat_col:
     # 환자 정보와 초기화 기능을 한 줄에 압축하여 문진 공간을 확보합니다.
     patient_info_col, reset_col = st.columns([5, 1.3], vertical_alignment="center", gap="small")
     with patient_info_col:
-        photo_col, detail_col = st.columns([1, 5], vertical_alignment="center", gap="small")
+        photo_col, detail_col = st.columns([1.6, 4.4], vertical_alignment="center", gap="small")
         with photo_col:
             photo_path = Path(__file__).resolve().parent / "images" / f"{selected}.png"
             if photo_path.is_file():
                 st.image(str(photo_path), width="stretch")
             else:
-                st.markdown("<div style='background:#e9f2fb;border-radius:9px;padding:7px;text-align:center;font-size:25px'>👤</div>", unsafe_allow_html=True)
+                st.markdown("<div style='background:#e9f2fb;border-radius:9px;padding:23px 8px;text-align:center;font-size:48px'>👤</div>", unsafe_allow_html=True)
         with detail_col:
             st.markdown(f"**{identity['name']} · {identity['age']}세 · {identity['sex']}**")
             st.caption(f"{identity['diagnosis']} · {identity['phase']}")
@@ -270,7 +281,7 @@ with chat_col:
         st.session_state.new_notice = None
 
     # 대화창만 스크롤되고, 환자 정보와 입력창은 바깥에 남습니다.
-    with st.container(height=320, border=True, key="chat_history"):
+    with st.container(height=260, border=True, key="chat_history"):
         # 이 컨테이너에만 스크롤을 적용하고, 아래 질문 입력창은 바깥에 둡니다.
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
