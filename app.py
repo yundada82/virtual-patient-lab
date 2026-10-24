@@ -230,10 +230,14 @@ st.markdown("""
 /* Streamlit 기본 heading 간격을 줄여 화면 하단의 입력창을 확보합니다. */
 .block-container h3 { font-size: 1.18rem; padding: .15rem 0; }
 .block-container [data-testid="stVerticalBlock"] { gap: .55rem; }
+/* 환자 정보와 문진 제목이 붙지 않도록 간격 확보 */
+.st-key-patient_header { margin-bottom: 16px; }
+/* 오른쪽 임상적 판단 제목과 조 이름 입력란 분리 */
+.st-key-soap_heading { margin-bottom: 12px; }
 /* st.container(height=...)에 고유 key를 지정하여 대화 영역만 반응형 높이로 조정. */
 .st-key-chat_history [data-testid="stVerticalBlockBorderWrapper"] {
-    height: clamp(180px, calc(100dvh - 440px), 650px) !important;
-    max-height: calc(100dvh - 440px);
+    height: clamp(180px, calc(100dvh - 405px), 650px) !important;
+    max-height: calc(100dvh - 405px);
     overflow-y: auto !important;
 }
 /* Streamlit 버전별 container DOM 차이를 고려한 보조 선택자 */
@@ -245,7 +249,7 @@ div[data-testid="stChatInput"] textarea { background: transparent; }
 @media (max-height: 700px) {
     .vpl-title { font-size: 1.35rem; margin-bottom: .4rem; }
     .st-key-chat_history [data-testid="stVerticalBlockBorderWrapper"] {
-        height: clamp(150px, calc(100dvh - 410px), 420px) !important;
+        height: clamp(150px, calc(100dvh - 395px), 420px) !important;
         max-height: none;
     }
 }
@@ -257,24 +261,25 @@ result_col, chat_col, soap_col = st.columns([2.5, 5.0, 2.5], gap="medium")
 
 with chat_col:
     # 환자 정보와 초기화 기능을 한 줄에 압축하여 문진 공간을 확보합니다.
-    patient_info_col, reset_col = st.columns([5, 1.3], vertical_alignment="center", gap="small")
-    with patient_info_col:
-        photo_col, detail_col = st.columns([1.6, 4.4], vertical_alignment="center", gap="small")
-        with photo_col:
-            photo_path = Path(__file__).resolve().parent / "images" / f"{selected}.png"
-            if photo_path.is_file():
-                st.image(str(photo_path), width="stretch")
-            else:
-                st.markdown("<div style='background:#e9f2fb;border-radius:9px;padding:23px 8px;text-align:center;font-size:48px'>👤</div>", unsafe_allow_html=True)
-        with detail_col:
-            st.markdown(f"**{identity['name']} · {identity['age']}세 · {identity['sex']}**")
-            st.caption(f"{identity['diagnosis']} · {identity['phase']}")
-    with reset_col:
-        with st.popover("↻ 초기화", help="현재 환자의 실습 기록을 초기화합니다"):
-            st.warning("현재 환자의 문진, 검사, A·P 및 조 정보가 모두 삭제됩니다.")
-            if st.button("초기화 확인", type="primary", key="confirm_patient_reset"):
-                st.session_state.reset_on_next_run = True
-                st.rerun()
+    with st.container(key="patient_header"):
+        patient_info_col, reset_col = st.columns([5, 1.3], vertical_alignment="center", gap="small")
+        with patient_info_col:
+            photo_col, detail_col = st.columns([1.6, 4.4], vertical_alignment="center", gap="small")
+            with photo_col:
+                photo_path = Path(__file__).resolve().parent / "images" / f"{selected}.png"
+                if photo_path.is_file():
+                    st.image(str(photo_path), width="stretch")
+                else:
+                    st.markdown("<div style='background:#e9f2fb;border-radius:9px;padding:23px 8px;text-align:center;font-size:48px'>👤</div>", unsafe_allow_html=True)
+            with detail_col:
+                st.markdown(f"**{identity['name']} · {identity['age']}세 · {identity['sex']}**")
+                st.caption(f"{identity['diagnosis']} · {identity['phase']}")
+        with reset_col:
+            with st.popover("↻ 초기화", help="현재 환자의 실습 기록을 초기화합니다"):
+                st.warning("현재 환자의 문진, 검사, A·P 및 조 정보가 모두 삭제됩니다.")
+                if st.button("초기화 확인", type="primary", key="confirm_patient_reset"):
+                    st.session_state.reset_on_next_run = True
+                    st.rerun()
     st.markdown("**💬 환자 문진**")
     if st.session_state.get("new_notice"):
         st.success(st.session_state.new_notice)
@@ -394,7 +399,8 @@ with result_col:
                 st.text(entry["result"])
 
 with soap_col:
-    st.subheader("✍️ 임상적 판단")
+    with st.container(key="soap_heading"):
+        st.subheader("✍️ 임상적 판단")
     st.text_input("조 이름", key="student_group", placeholder="예: 1조")
     st.text_input("학생 이름", key="student_names")
     st.text_area("A — Assessment", key="assessment", height=155,
