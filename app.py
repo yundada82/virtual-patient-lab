@@ -518,6 +518,29 @@ with chat_col:
                 st.code(st.session_state.reply_error_detail, language="text")
 
     if st.session_state.get("reply_error"):
+        with st.expander("🔍 사용 가능한 Gemini 모델 확인 (관리자 점검)"):
+            st.caption("현재 API 키로 조회되는 모델 중 문진 답변 생성이 가능한 모델만 표시합니다. API 키는 표시되지 않습니다.")
+            if st.button("모델 목록 조회", key="check_gemini_models"):
+                try:
+                    available = []
+                    for model in client.models.list():
+                        name = getattr(model, "name", "")
+                        actions = getattr(model, "supported_actions", None)
+                        if name and (not actions or "generateContent" in actions):
+                            available.append(name)
+                    st.session_state.available_gemini_models = available
+                    st.session_state.model_lookup_error = None
+                except Exception as exc:
+                    st.session_state.available_gemini_models = []
+                    code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+                    st.session_state.model_lookup_error = f"{type(exc).__name__}" + (f" (HTTP {code})" if code else "")
+            if st.session_state.get("model_lookup_error"):
+                st.error(st.session_state.model_lookup_error)
+            elif st.session_state.get("available_gemini_models"):
+                st.code("\n".join(st.session_state.available_gemini_models), language="text")
+                st.caption("목록을 복사해서 알려주시면 사용 가능한 모델로 연결해 드리겠습니다.")
+            elif "available_gemini_models" in st.session_state:
+                st.info("생성 가능한 모델을 확인하지 못했습니다. 관리자 로그를 확인해 주세요.")
         if st.button("🔁 답변 다시 시도", key="retry_reply"):
             st.session_state.reply_error = False
             st.session_state.reply_error_detail = None
