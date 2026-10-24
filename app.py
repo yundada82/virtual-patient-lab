@@ -520,6 +520,28 @@ with chat_col:
     if st.session_state.get("reply_error"):
         with st.expander("🔍 사용 가능한 Gemini 모델 확인 (관리자 점검)"):
             st.caption("현재 API 키로 조회되는 모델 중 문진 답변 생성이 가능한 모델만 표시합니다. API 키는 표시되지 않습니다.")
+            st.markdown("**실제 답변 생성 테스트**")
+            st.caption("모델 목록 조회와 달리 실제 generateContent 요청을 보내 정상 작동 여부를 확인합니다. 테스트당 API 호출이 1회 발생합니다.")
+            test_models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.8-flash"]
+            chosen_test_model = st.selectbox("테스트할 모델", test_models, key="gemini_probe_model")
+            if st.button("선택한 모델로 짧은 답변 생성 테스트", key="probe_gemini_model"):
+                try:
+                    with st.spinner("모델 연결 테스트 중..."):
+                        probe = client.models.generate_content(
+                            model=chosen_test_model,
+                            contents="안녕하세요. 한 문장으로 인사해 주세요.",
+                            config=types.GenerateContentConfig(max_output_tokens=80, temperature=0.1),
+                        )
+                    st.success(f"{chosen_test_model}: 답변 생성 성공")
+                    st.write((probe.text or "(응답 텍스트 없음)")[:300])
+                except Exception as exc:
+                    code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+                    st.error(f"{chosen_test_model}: {type(exc).__name__}" + (f" (HTTP {code})" if code else ""))
+                    # API 오류 설명만 출력. 키나 환자 정보가 포함된 요청 내용은 표시하지 않습니다.
+                    detail = str(exc)
+                    detail = re.sub(r"AIza[0-9A-Za-z_-]{20,}", "[API_KEY_HIDDEN]", detail)
+                    st.code(detail[:1500], language="text")
+
             if st.button("모델 목록 조회", key="check_gemini_models"):
                 try:
                     available = []
