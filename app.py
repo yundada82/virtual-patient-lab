@@ -91,11 +91,108 @@ def exam_result(patient, key):
     return display_value(value)
 
 
+# PDF 및 화면에서 내부 데이터 키 대신 읽기 쉬운 검사 항목명을 사용합니다.
+FIELD_LABELS = {
+    "knee_flexion_arom": "무릎 굽힘 AROM (°)",
+    "knee_flexion_prom": "무릎 굽힘 PROM (°)",
+    "knee_extension_arom": "무릎 폄 AROM (°)",
+    "knee_extension_prom": "무릎 폄 PROM (°)",
+    "shoulder_flexion_arom": "어깨 굽힘 AROM (°)",
+    "shoulder_flexion_prom": "어깨 굽힘 PROM (°)",
+    "shoulder_abduction_arom": "어깨 벌림 AROM (°)",
+    "shoulder_abduction_prom": "어깨 벌림 PROM (°)",
+    "shoulder_er_arom": "어깨 가쪽돌림 AROM (°)",
+    "shoulder_er_prom": "어깨 가쪽돌림 PROM (°)",
+    "R": "오른쪽", "L": "왼쪽", "status": "상태",
+}
+
+
+def readable_result(text):
+    """저장된 원본 검사 결과를 변경하지 않고 출력용 항목명만 치환."""
+    output = []
+    for line in str(text).splitlines():
+        m = re.match(r"^(\s*)([A-Za-z][A-Za-z0-9_]*):(.*)$", line)
+        if m:
+            indent, key, value = m.groups()
+            label = FIELD_LABELS.get(key, key.replace("_", " "))
+            line = f"{indent}{label}:{value}"
+        output.append(line)
+    return "\n".join(output)
+
+
+# 교육용 가상 의학 기록: 기존 patients.json의 확정 사실을 보존하며 P01만 확장합니다.
+# 아래 수치는 실제 환자 자료가 아니라 교수자 검토 전의 시뮬레이션 값입니다.
+MEDICAL_RECORDS = {
+    "P01": {
+        "record_date": "수술 후 4주 외래 재활 의뢰 시점 (교육용)",
+        "vitals": ["혈압 132/78 mmHg", "맥박 76회/분", "호흡수 16회/분", "체온 36.6℃", "산소포화도(SpO₂) 98% (실내공기)"],
+        "history": ["고혈압: 약물 복용 중 (기존 설정)", "기타 동반질환: 현재 시나리오에서 확인된 기록 없음"],
+        "medications": ["고혈압 약 복용 중 (성분·용량은 기록 미제공)", "수술 후 진통제: 처방 내역 미제공"],
+        "systems_review": [
+            "심혈관계: 기존 고혈압 병력; 현재 흉통 호소 없음 (환자 설정)",
+            "호흡계: 호흡곤란 호소 없음 (환자 설정)",
+            "피부·상처: 절개부 치유 중, 분비물·뚜렷한 발적 없음; 경미한 열감·부종 (기존 설정)",
+            "근골격계: 오른쪽 무릎 통증·뻣뻣함·부종, 계단 내려가기 어려움",
+            "신경계: 별도의 신경학적 이상 소견은 기록 미제공",
+            "혈관·혈전 관련: 새로 발생한 종아리 통증은 부인; 혈전증을 배제한 것은 아님",
+        ],
+        "precautions": ["집도의 지시 범위 내 체중부하(WBAT)", "발열·상처 분비물·새 종아리 통증·호흡곤란·흉통 등 발생 시 의료진 평가"],
+        "medical_tests": {
+            "blood_count": {"name": "혈액검사(CBC) — 외래 추적", "lines": [
+                "채혈 시점: 수술 후 4주 (교육용 가상값)", "백혈구(WBC): 7.1 ×10³/µL", "헤모글로빈(Hb): 11.6 g/dL", "혈소판(PLT): 286 ×10³/µL",
+                "해석 주의: 단일 수치만으로 감염·출혈·혈전 여부를 판단할 수 없음"]},
+            "inflammation": {"name": "염증 관련 검사 — 외래 추적", "lines": [
+                "채혈 시점: 수술 후 4주 (교육용 가상값)", "CRP: 0.4 mg/dL", "ESR: 24 mm/h",
+                "해석 주의: 수술 후 경과와 임상증상을 함께 고려해야 함"]},
+            "postop_xray": {"name": "오른쪽 무릎 수술 후 단순 X선 판독 요약", "lines": [
+                "촬영 시점: 수술 후 4주 (교육용 판독 요약)", "인공관절 구성물의 정렬은 유지됨", "명백한 급성 골절이나 탈구 소견 없음",
+                "주의: 실제 영상 원본은 제공되지 않음"]},
+            "surgical_summary": {"name": "수술·재활 의뢰 요약", "lines": [
+                "수술: 오른쪽 인공무릎관절 전치환술(TKA)", "수술 후 경과: 4주", "체중부하: 집도의 지시 범위 내 WBAT",
+                "수술 상세 기록(삽입물 종류·절개 방식 등): 미제공"]},
+        },
+    }
+}
+
+
+def clinical_record_lines(patient_id, identity):
+    lines = ["[교육용 기본 진료·의뢰 기록]", f"환자: {identity['name']} ({identity['age']}세, {identity['sex']})",
+             f"의학적 진단: {identity['diagnosis']}", f"경과: {identity['phase']}"]
+    record = MEDICAL_RECORDS.get(patient_id)
+    if not record:
+        return lines + ["상세 의학적 기록은 아직 제공되지 않았습니다. (기존 환자 자료 유지)"]
+    lines.append(f"기록 시점: {record['record_date']}")
+    for label, key in [("활력징후", "vitals"), ("과거력·동반질환", "history"),
+                       ("복용 약물", "medications"), ("계통별 검토", "systems_review"),
+                       ("주의사항", "precautions")]:
+        lines.append(f"■ {label}")
+        lines.extend("  • " + v for v in record[key])
+    lines.append("※ 교육용 가상 기록이며 미제공 항목은 정상으로 간주하지 않습니다.")
+    return lines
+
+
+def clinical_test_lines(patient_id, test_id):
+    test = MEDICAL_RECORDS[patient_id]["medical_tests"][test_id]
+    return [test["name"]] + test["lines"] + ["※ 교육용 가상 검사 결과"]
+
+
+def referral_record_lines(identity):
+    """실제로 학생 화면에 표시되는 기본 의뢰 정보와 동일한 내용."""
+    return [
+        "교육용 기본 의뢰 기록",
+        f"환자: {identity['name']} ({identity['age']}세, {identity['sex']})",
+        f"의학적 진단: {identity['diagnosis']}",
+        f"경과: {identity['phase']}",
+        "※ 별도의 수술기록지나 영상 판독지는 제공되지 않았습니다.",
+    ]
+
+
 def new_session(case_id):
     st.session_state.active_case = case_id
     st.session_state.messages = []
     st.session_state.exam_log = []
     st.session_state.report_requested = False
+    st.session_state.medical_test_log = []
     st.session_state.assessment = ""
     st.session_state.plan = ""
     st.session_state.student_group = ""
@@ -124,6 +221,8 @@ if not selected or selected not in PATIENTS:
         else:
             st.warning("해당 이름의 환자를 찾지 못했습니다. 배정받은 환자 이름을 확인해 주세요.")
     st.stop()
+if "medical_test_log" not in st.session_state:
+    st.session_state.medical_test_log = []
 patient = PATIENTS[selected]
 identity = patient["identity"]
 
@@ -161,6 +260,10 @@ def quick_fact_answer(p, question):
     """Only answer explicitly grounded questions. Other questions go to Gemini."""
     q = re.sub(r"\s+", "", question).lower()
     identity = p["identity"]
+    # 인사만 입력한 경우에는 외부 AI 호출 없이 즉시 환자로서 응답합니다.
+    greeting = re.sub(r"[!！?.。~～]+", "", q)
+    if greeting in ("안녕", "안녕하세요", "안녕하십니까", "반갑습니다", "반가워요", "좋은아침입니다", "좋은아침이에요"):
+        return "네, 안녕하세요."
     phase = identity["phase"]
     diagnosis = identity["diagnosis"]
     subjective = p["subjective"]
@@ -356,12 +459,36 @@ with result_col:
     st.subheader("📋 의뢰·검사 결과")
     if st.session_state.report_requested:
         with st.expander("📄 기존 의뢰 기록", expanded=True):
-            st.write(f"**환자:** {identity['name']}")
-            st.write(f"**의학적 진단:** {identity['diagnosis']}")
-            st.write(f"**경과:** {identity['phase']}")
-            st.caption("교육용 기본 의뢰 정보입니다. 검사 결과는 아래 메뉴에서 별도로 요청하세요.")
+            for record_line in clinical_record_lines(selected, identity):
+                st.write(record_line)
+            st.caption("의학적 검사 결과와 물리치료 평가 결과는 아래에서 별도로 확인하세요.")
     else:
         st.caption("의뢰 기록은 환자 문진에서 요청하면 표시됩니다.")
+    # 의학적 검사 결과는 학생이 항목을 선택해 요청했을 때만 공개합니다.
+    medical_record = MEDICAL_RECORDS.get(selected)
+    if medical_record:
+        st.markdown("#### 🏥 진료실 검사 결과 요청")
+        st.caption("필요한 의학적 기록을 선택해 요청하세요. 수치는 교육용 가상값입니다.")
+        medical_keys = list(medical_record["medical_tests"])
+        medical_choice = st.selectbox(
+            "요청할 의학적 검사", medical_keys,
+            format_func=lambda k: medical_record["medical_tests"][k]["name"],
+            key="medical_test_choice")
+        if st.button("선택한 진료실 검사 결과 요청", key="request_medical_test"):
+            if not any(item["key"] == medical_choice for item in st.session_state.medical_test_log):
+                st.session_state.medical_test_log.append({"key": medical_choice,
+                    "name": medical_record["medical_tests"][medical_choice]["name"],
+                    "lines": clinical_test_lines(selected, medical_choice)})
+                st.session_state.new_medical_key = medical_choice
+                st.success("새 진료실 검사 결과가 추가되었습니다. 아래에서 확인하세요.")
+            else:
+                st.info("이미 요청한 검사입니다. 아래 결과에서 다시 확인할 수 있습니다.")
+        for item in st.session_state.medical_test_log:
+            fresh = item["key"] == st.session_state.get("new_medical_key")
+            with st.expander(item["name"] + (" · 🆕 새 결과" if fresh else " · 확인 완료"), expanded=fresh):
+                for line in item["lines"]:
+                    st.write(line)
+
     st.subheader("🔎 추가 검사 시행")
     st.caption("필요한 검사를 선택하고 선택 이유를 작성하세요.")
     keys = list(patient["objective"])
@@ -396,7 +523,7 @@ with result_col:
             label = f"{idx+1}. {entry['name']}" + (" · 🆕 새 결과" if is_new else " · ✓ 시행 완료")
             with st.expander(label, expanded=is_new):
                 st.write("**선택 이유:** " + entry["reason"])
-                st.text(entry["result"])
+                st.text(readable_result(entry["result"]))
 
 with soap_col:
     with st.container(key="soap_heading"):
@@ -431,12 +558,24 @@ def make_pdf():
     for msg in st.session_state.messages:
         add_lines(("학생" if msg["role"] == "user" else "환자") + ": " + msg["content"])
     story.append(Paragraph("O. Objective - 기존 기록", heading))
-    add_lines("의뢰 기록 요청함" if st.session_state.report_requested else "의뢰 기록 미요청")
+    if st.session_state.report_requested:
+        for record_line in clinical_record_lines(selected, identity):
+            add_lines(record_line)
+    else:
+        add_lines("의뢰 기록 미요청")
+    story.append(Paragraph("O. Objective - 요청한 진료실 검사 결과", heading))
+    if st.session_state.medical_test_log:
+        for item in st.session_state.medical_test_log:
+            for line in item["lines"]:
+                add_lines(line)
+    else:
+        add_lines("추가 의학적 검사 결과 미요청")
     story.append(Paragraph("O. Objective - 추가 검사", heading))
     for i, entry in enumerate(st.session_state.exam_log, 1):
         add_lines(f"{i}. {entry['name']}")
         add_lines("선택 이유: " + entry["reason"])
-        add_lines("결과: " + entry["result"])
+        add_lines("결과:")
+        add_lines(readable_result(entry["result"]))
     if not st.session_state.exam_log:
         add_lines("시행한 검사 없음")
     story.append(Paragraph("A. Assessment - 학생 작성", heading))
