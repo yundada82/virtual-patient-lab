@@ -100,26 +100,29 @@ def new_session(case_id):
     st.session_state.plan = ""
     st.session_state.student_group = ""
     st.session_state.student_names = ""
+    st.session_state.reply_pending = False
+    st.session_state.reply_error = False
+    st.session_state.new_notice = None
+    st.session_state.confirm_reset = False
 
 
-# 학생은 배정된 환자 이름만 입력합니다. 다른 환자 목록은 보여주지 않습니다.
+# 배정된 환자 이름으로만 시작하며, 시작 후에는 불러오기 입력란을 숨깁니다.
 name_to_id = {p["identity"]["name"].replace(" ", ""): cid for cid, p in PATIENTS.items()}
-st.subheader("실습 환자 불러오기")
-with st.form("patient_lookup"):
-    typed_name = st.text_input("담당 환자의 이름을 입력하세요", placeholder="예: 박영숙")
-    lookup = st.form_submit_button("환자 불러오기")
-if lookup:
-    normalized_name = re.sub(r"\s+", "", typed_name)
-    matched = name_to_id.get(normalized_name)
-    if matched:
-        new_session(matched)
-        st.rerun()
-    else:
-        st.warning("해당 이름의 환자를 찾지 못했습니다. 배정받은 환자 이름을 확인해 주세요.")
-
 selected = st.session_state.get("active_case")
+if st.session_state.pop("reset_on_next_run", False) and selected in PATIENTS:
+    new_session(selected)
 if not selected or selected not in PATIENTS:
-    st.info("배정받은 환자 이름을 입력하고 '환자 불러오기'를 눌러 주세요.")
+    st.subheader("실습 환자 불러오기")
+    with st.form("patient_lookup"):
+        typed_name = st.text_input("담당 환자의 이름을 입력하세요", placeholder="예: 박영숙")
+        lookup = st.form_submit_button("환자 불러오기", type="primary")
+    if lookup:
+        matched = name_to_id.get(re.sub(r"\s+", "", typed_name))
+        if matched:
+            new_session(matched)
+            st.rerun()
+        else:
+            st.warning("해당 이름의 환자를 찾지 못했습니다. 배정받은 환자 이름을 확인해 주세요.")
     st.stop()
 patient = PATIENTS[selected]
 identity = patient["identity"]
@@ -211,99 +214,108 @@ div[data-testid="stChatInput"] textarea { background: transparent; }
 </style>
 """, unsafe_allow_html=True)
 
-# 좌: 환자·SOAP / 중앙: 대화 / 우: 검사·기록
-left_col, chat_col, right_col = st.columns([2.0, 5.5, 2.5], gap="medium")
-with left_col:
-    st.subheader("👤 환자 정보")
-    photo_path = Path(__file__).resolve().parent / "images" / f"{selected}.png"
-    if photo_path.is_file():
-        st.image(str(photo_path), width="stretch")
-    else:
-        st.markdown("<div style='background:#e9f2fb;border-radius:12px;padding:30px;text-align:center;font-size:48px'>👤</div>", unsafe_allow_html=True)
-    st.markdown(f"**{identity['name']} · {identity['age']}세 · {identity['sex']}**")
-    st.caption(f"의학적 진단: {identity['diagnosis']}")
-    if st.button("🔄 새 문진 시작", help="현재 환자의 문진·검사·작성 기록을 지웁니다."):
-        new_session(selected)
-        st.rerun()
-    st.divider()
-    st.subheader("✍️ A. Assessment / P. Plan 작성")
-    st.caption("수집한 S·O 정보를 종합하여 직접 작성하세요. AI는 평가·치료계획의 정답을 제공하지 않습니다.")
-    st.text_input("조 이름", key="student_group", placeholder="예: 1조")
-    st.text_input("학생 이름", key="student_names")
-    st.text_area("A — Assessment", key="assessment", height=190, placeholder="문제 목록, 우선순위, 검사 결과를 통합한 임상적 판단")
-    st.text_area("P — Plan", key="plan", height=190, placeholder="치료 목표, 중재 및 근거, 재평가 계획")
-
+# 좌: 의뢰/검사 · 중앙: 환자/문진 · 우: SOAP
+result_col, chat_col, soap_col = st.columns([2.5, 5.0, 2.5], gap="medium")
 
 with chat_col:
-    with st.container(height=590, border=True):
-        st.subheader("💬 환자 문진")
-        st.caption("질문을 입력하면 환자가 답변합니다. 검사 결과는 오른쪽에서 확인하세요.")
+    # 환자 정보는 대화창 위에 항상 보이도록 별도 영역에 둡니다.
+    photo_col, detail_col = st.columns([1, 4], gap="small")
+    with photo_col:
+        photo_path = Path(__file__).resolve().parent / "images" / f"{selected}.png"
+        if photo_path.is_file():
+            st.image(str(photo_path), width="stretch")
+        else:
+            st.markdown("<div style='background:#e9f2fb;border-radius:12px;padding:12px;text-align:center;font-size:32px'>👤</div>", unsafe_allow_html=True)
+    with detail_col:
+        st.markdown(f"**{identity['name']} · {identity['age']}세 · {identity['sex']}**")
+        st.caption(f"의학적 진단: {identity['diagnosis']} · {identity['phase']}")
+    st.divider()
+    st.subheader("💬 환자 문진")
+    st.caption("질문은 즉시 표시됩니다. 의뢰 기록과 검사 결과는 왼쪽에서 확인하세요.")
+    if st.session_state.get("new_notice"):
+        st.success(st.session_state.new_notice)
+        st.session_state.new_notice = None
 
+    # 대화창만 스크롤되고, 환자 정보와 입력창은 바깥에 남습니다.
+    with st.container(height=510, border=True):
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
+        if st.session_state.get("reply_pending"):
+            with st.chat_message("assistant"):
+                st.info("환자가 답변을 생각하고 있습니다...")
+        elif st.session_state.get("reply_error"):
+            st.warning("답변 생성에 실패했습니다. 아래 '답변 다시 시도'를 눌러 주세요.")
 
-    # 대화 입력창은 스크롤되는 메시지 컨테이너 바깥, 맨 아래에 고정 배치
-    if question := st.chat_input("환자에게 질문하거나 의뢰 기록을 요청하세요", key="patient_chat_input"):
-        user_count = sum(m["role"] == "user" for m in st.session_state.messages)
-        if user_count >= 20:
-            st.warning("이번 실습의 질문 횟수 제한(20회)에 도달했습니다.")
-            st.stop()
+    if st.session_state.get("reply_error"):
+        if st.button("🔁 답변 다시 시도", key="retry_reply"):
+            st.session_state.reply_error = False
+            st.session_state.reply_pending = True
+            st.rerun()
+
+    user_count = sum(m["role"] == "user" for m in st.session_state.messages)
+    question = st.chat_input(
+        "환자에게 질문하거나 의뢰 기록을 요청하세요",
+        key="patient_chat_input",
+        disabled=bool(st.session_state.get("reply_pending") or st.session_state.get("reply_error") or user_count >= 20),
+    )
+    if user_count >= 20:
+        st.caption("이번 실습의 질문 횟수 제한(20회)에 도달했습니다.")
+    if question and user_count < 20:
         st.session_state.messages.append({"role": "user", "content": question})
-        if wants_report(question):
+        st.session_state.reply_pending = True
+        st.session_state.reply_error = False
+        # 먼저 화면을 다시 그려 질문을 즉시 표시한 다음, 다음 실행에서 AI 응답을 받습니다.
+        st.rerun()
+
+    if st.session_state.get("reply_pending"):
+        latest_question = next(m["content"] for m in reversed(st.session_state.messages) if m["role"] == "user")
+        answer = None
+        if wants_report(latest_question):
             st.session_state.report_requested = True
-            answer = "네, 의뢰 관련 기록을 보여드릴게요."
-        elif seems_like_exam(question):
-            answer = "검사 결과는 오른쪽 '추가 검사 시행' 메뉴에서 해당 검사를 선택하면 확인할 수 있습니다."
+            st.session_state.new_notice = "📄 의뢰 기록이 왼쪽 패널에 새로 표시되었습니다."
+            answer = "네, 의뢰 관련 기록을 보여드릴게요. 왼쪽에서 확인해 주세요."
+        elif seems_like_exam(latest_question):
+            answer = "검사 결과는 왼쪽 '추가 검사 시행' 메뉴에서 해당 검사를 선택하면 확인할 수 있습니다."
         else:
-            fixed_answer = quick_fact_answer(patient, question)
-            if fixed_answer is not None:
-                answer = fixed_answer
-            else:
+            answer = quick_fact_answer(patient, latest_question)
+            if answer is None:
                 history = [types.Content(role="user" if m["role"] == "user" else "model",
                                          parts=[types.Part(text=m["content"])])
                            for m in st.session_state.messages[-16:]]
                 try:
-                    with st.spinner("환자가 답변하고 있습니다..."):
-                        response = request_patient_reply(history, system_prompt(patient))
+                    response = request_patient_reply(history, system_prompt(patient))
                     answer = (response.text or "").strip()
                     if not answer:
-                        answer = "죄송해요, 다시 질문해 주시겠어요?"
-                    elif getattr(response, "candidates", None):
+                        raise ValueError("빈 AI 응답")
+                    if getattr(response, "candidates", None):
                         finish = getattr(response.candidates[0], "finish_reason", None)
                         if finish and "MAX_TOKENS" in str(finish):
-                            print("Gemini 응답이 토큰 제한으로 중단됨", flush=True)
-                            answer = "죄송해요. 말씀을 다시 정리해서 답해 드릴게요. 질문을 한 번 더 해주시겠어요?"
+                            raise ValueError("응답 길이 제한")
                 except Exception as exc:
                     print(f"Gemini API 오류: {type(exc).__name__}: {exc}", flush=True)
-                    code = getattr(exc, "code", None)
-                    if code == 503:
-                        answer = "지금 잠시 연결이 원활하지 않아요. 조금 뒤에 같은 질문을 다시 해주세요."
-                    elif code == 429:
-                        answer = "현재 AI 요청 한도에 도달했어요. 잠시 후 다시 시도해 주세요."
-                    else:
-                        answer = "현재 환자 응답을 생성하지 못했습니다. 잠시 후 다시 시도하거나 관리자에게 알려 주세요."
+                    st.session_state.reply_pending = False
+                    st.session_state.reply_error = True
+                    st.rerun()
         st.session_state.messages.append({"role": "assistant", "content": answer})
+        st.session_state.reply_pending = False
+        st.session_state.reply_error = False
         st.rerun()
 
-
-
-with right_col:
-    st.subheader("📋 검사 및 기록")
+with result_col:
+    st.subheader("📋 의뢰·검사 결과")
     if st.session_state.report_requested:
         with st.expander("📄 기존 의뢰 기록", expanded=True):
             st.write(f"**환자:** {identity['name']}")
             st.write(f"**의학적 진단:** {identity['diagnosis']}")
             st.write(f"**경과:** {identity['phase']}")
-            st.caption("교육용 기본 의뢰 정보입니다. 검사 결과는 아래 검사 메뉴에서 별도로 요청하세요.")
-
-
+            st.caption("교육용 기본 의뢰 정보입니다. 검사 결과는 아래 메뉴에서 별도로 요청하세요.")
+    else:
+        st.caption("의뢰 기록은 환자 문진에서 요청하면 표시됩니다.")
     st.subheader("🔎 추가 검사 시행")
-    st.caption("필요하다고 판단한 검사를 선택하고, 선택 이유를 작성한 뒤 결과를 확인하세요.")
+    st.caption("필요한 검사를 선택하고 선택 이유를 작성하세요.")
     keys = list(patient["objective"])
 
-    # 검사 선택은 form 밖에 두어 변경 즉시 이유 입력창을 초기화합니다.
-    # (Streamlit form 내부의 selectbox에는 on_change 콜백을 사용할 수 없습니다.)
     def clear_exam_reason():
         st.session_state.exam_reason = ""
 
@@ -312,31 +324,53 @@ with right_col:
         st.session_state.exam_reason = ""
         st.session_state.exam_choice = keys[0]
 
-    chosen = st.selectbox(
-        "시행할 검사", keys, format_func=lambda k: LABELS.get(k, k),
-        key="exam_choice", on_change=clear_exam_reason
-    )
+    chosen = st.selectbox("시행할 검사", keys, format_func=lambda k: LABELS.get(k, k),
+                          key="exam_choice", on_change=clear_exam_reason)
     with st.form("exam_form"):
-        reason = st.text_area(
-            "검사 선택 이유", key="exam_reason",
-            placeholder="문진에서 얻은 정보와 연결해 작성하세요."
-        )
+        reason = st.text_area("검사 선택 이유", key="exam_reason",
+                              placeholder="문진 정보와 연결해 작성하세요.")
         submitted = st.form_submit_button("검사 시행 및 결과 확인")
     if submitted:
         if not reason.strip():
             st.warning("검사 선택 이유를 작성해 주세요.")
         else:
             result = exam_result(patient, chosen)
-            st.session_state.exam_log.append({"name": LABELS.get(chosen, chosen),
+            st.session_state.exam_log.append({"key": chosen, "name": LABELS.get(chosen, chosen),
                                               "reason": reason.strip(), "result": result})
+            st.session_state.new_exam_index = len(st.session_state.exam_log) - 1
+            st.success(f"새 검사 결과가 추가되었습니다: {LABELS.get(chosen, chosen)}")
     if st.session_state.exam_log:
         st.markdown("#### 시행한 검사 및 결과")
-        for idx, entry in enumerate(st.session_state.exam_log, 1):
-            with st.expander(f"{idx}. {entry['name']}", expanded=idx == len(st.session_state.exam_log)):
+        for idx, entry in enumerate(st.session_state.exam_log):
+            is_new = idx == st.session_state.get("new_exam_index", -1)
+            label = f"{idx+1}. {entry['name']}" + (" · 🆕 새 결과" if is_new else " · ✓ 시행 완료")
+            with st.expander(label, expanded=is_new):
                 st.write("**선택 이유:** " + entry["reason"])
                 st.text(entry["result"])
 
-
+with soap_col:
+    st.subheader("✍️ 임상적 판단")
+    st.text_input("조 이름", key="student_group", placeholder="예: 1조")
+    st.text_input("학생 이름", key="student_names")
+    st.text_area("A — Assessment", key="assessment", height=215,
+                 placeholder="수집한 S·O 정보를 종합한 문제점과 임상적 판단")
+    st.text_area("P — Plan", key="plan", height=215,
+                 placeholder="치료 목표, 중재 및 근거, 재평가 계획")
+    st.caption("A와 P는 학생이 직접 작성합니다. 검사나 문진 중에도 작성 내용이 유지됩니다.")
+    st.divider()
+    if st.button("🔄 현재 환자 실습 초기화", help="문진·검사·SOAP 기록을 처음부터 다시 시작합니다."):
+        st.session_state.confirm_reset = True
+    if st.session_state.get("confirm_reset"):
+        st.warning("현재 환자의 문진, 검사, A·P 및 조 정보가 모두 삭제됩니다. 초기화하시겠습니까?")
+        yes_col, no_col = st.columns(2)
+        with yes_col:
+            if st.button("초기화", type="primary"):
+                st.session_state.reset_on_next_run = True
+                st.rerun()
+        with no_col:
+            if st.button("취소"):
+                st.session_state.confirm_reset = False
+                st.rerun()
 
 def make_pdf():
     pdfmetrics.registerFont(UnicodeCIDFont("HYSMyeongJo-Medium"))
@@ -376,7 +410,7 @@ def make_pdf():
     return buffer.getvalue()
 
 
-with left_col:
+with soap_col:
     if st.session_state.assessment.strip() and st.session_state.plan.strip():
         try:
             st.download_button("📄 SOAP 전체 실습 보고서 PDF 다운로드", data=make_pdf(),
