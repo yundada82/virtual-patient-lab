@@ -32,7 +32,7 @@ except Exception as exc:
     st.stop()
 
 try:
-    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"], http_options=types.HttpOptions(timeout=20000))
+    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"], http_options=types.HttpOptions(timeout=30000))
 except (KeyError, FileNotFoundError):
     st.error("관리자가 GEMINI_API_KEY를 Streamlit Secrets에 설정해야 합니다.")
     st.stop()
@@ -419,8 +419,7 @@ def request_patient_reply(history, prompt):
         config=types.GenerateContentConfig(
             system_instruction=prompt,
             temperature=0.2,
-            max_output_tokens=220,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
+            max_output_tokens=500,
         ),
     )
 
@@ -514,11 +513,14 @@ with chat_col:
             with st.chat_message("assistant"):
                 st.info("환자가 답변을 생각하고 있습니다...")
         elif st.session_state.get("reply_error"):
-            st.warning("답변 생성에 실패했습니다. 아래 '답변 다시 시도'를 눌러 주세요.")
+            st.warning("답변 생성에 실패했습니다. 아래 오류 유형을 확인해 주세요.")
+            if st.session_state.get("reply_error_detail"):
+                st.code(st.session_state.reply_error_detail, language="text")
 
     if st.session_state.get("reply_error"):
         if st.button("🔁 답변 다시 시도", key="retry_reply"):
             st.session_state.reply_error = False
+            st.session_state.reply_error_detail = None
             st.session_state.reply_pending = True
             st.rerun()
 
@@ -534,6 +536,7 @@ with chat_col:
         st.session_state.messages.append({"role": "user", "content": question})
         st.session_state.reply_pending = True
         st.session_state.reply_error = False
+        st.session_state.reply_error_detail = None
         # 먼저 화면을 다시 그려 질문을 즉시 표시한 다음, 다음 실행에서 AI 응답을 받습니다.
         st.rerun()
 
@@ -565,6 +568,22 @@ with chat_col:
                     print(f"Gemini API 오류: {type(exc).__name__}: {exc}", flush=True)
                     st.session_state.reply_pending = False
                     st.session_state.reply_error = True
+                    # API 키·요청 본문·환자 데이터는 노출하지 않고 오류 유형과 코드만 표시합니다.
+                    code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+                    error_type = type(exc).__name__
+                    diagnostic = f"{error_type}" + (f" (HTTP {code})" if code else "")
+                    details = str(exc)
+                    if "429" in details or "RESOURCE_EXHAUSTED" in details:
+                        diagnostic += " — API 사용량 또는 요청 빈도 제한 가능성"
+                    elif "404" in details or "NOT_FOUND" in details:
+                        diagnostic += " — 모델 이름 또는 사용 가능 여부 확인 필요"
+                    elif "403" in details or "PERMISSION_DENIED" in details:
+                        diagnostic += " — API 접근 권한 확인 필요"
+                    elif "400" in details or "INVALID_ARGUMENT" in details:
+                        diagnostic += " — 요청 설정 호환성 확인 필요"
+                    elif "timeout" in details.lower() or "deadline" in details.lower():
+                        diagnostic += " — 응답 시간 초과"
+                    st.session_state.reply_error_detail = diagnostic
                     st.rerun()
         st.session_state.messages.append({"role": "assistant", "content": answer})
         st.session_state.reply_pending = False
