@@ -5,7 +5,6 @@ The JSON shipped to students MUST NOT include instructor_only fields.
 import json
 import re
 import time
-import random
 from io import BytesIO
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -380,8 +379,10 @@ def quick_fact_answer(p, question):
     identity = p["identity"]
     # 인사만 입력한 경우에는 외부 AI 호출 없이 즉시 환자로서 응답합니다.
     greeting = re.sub(r"[!！?.。~～]+", "", q)
-    if greeting in ("안녕", "안녕하세요", "안녕하십니까", "반갑습니다", "반가워요", "좋은아침입니다", "좋은아침이에요"):
+    if greeting in ("안녕", "안녕하세요", "안녕하십니까", "반갑습니다", "반가워요", "좋은아침입니다", "좋은아침이에요", "안녕하세요환자분", "반갑습니다환자분"):
         return "네, 안녕하세요."
+    if greeting in ("감사합니다", "고맙습니다", "감사해요", "고마워요"):
+        return "네, 괜찮습니다."
     phase = identity["phase"]
     diagnosis = identity["diagnosis"]
     subjective = p["subjective"]
@@ -410,21 +411,18 @@ def quick_fact_answer(p, question):
 
 
 def request_patient_reply(history, prompt):
-    """Retry only temporary 503 failures, with bounded backoff."""
-    from google.genai import errors
-    for attempt in range(3):
-        try:
-            return client.models.generate_content(
-                model="gemini-3.8-flash", contents=history,
-                config=types.GenerateContentConfig(
-                    system_instruction=prompt, temperature=0.2, max_output_tokens=900),
-            )
-        except errors.APIError as exc:
-            code = getattr(exc, "code", None)
-            if code == 503 and attempt < 2:
-                time.sleep(min(2 ** attempt, 4) + random.uniform(0, 0.4))
-                continue
-            raise
+    """짧은 문진 답변을 위한 경량 모델 호출. 네트워크 지연 시 빠르게 오류를 표시합니다."""
+    return client.models.generate_content(
+        model="gemini-2.5-flash-lite",
+        contents=history,
+        config=types.GenerateContentConfig(
+            system_instruction=prompt,
+            temperature=0.2,
+            max_output_tokens=220,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+            http_options=types.HttpOptions(timeout=15000),
+        ),
+    )
 
 
 st.markdown("""
@@ -553,7 +551,7 @@ with chat_col:
             if answer is None:
                 history = [types.Content(role="user" if m["role"] == "user" else "model",
                                          parts=[types.Part(text=m["content"])])
-                           for m in st.session_state.messages[-16:]]
+                           for m in st.session_state.messages[-8:]]
                 try:
                     response = request_patient_reply(history, system_prompt(patient))
                     answer = (response.text or "").strip()
