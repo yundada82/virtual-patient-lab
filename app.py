@@ -32,7 +32,7 @@ except Exception as exc:
     st.stop()
 
 try:
-    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"], http_options=types.HttpOptions(timeout=20000))
 except (KeyError, FileNotFoundError):
     st.error("관리자가 GEMINI_API_KEY를 Streamlit Secrets에 설정해야 합니다.")
     st.stop()
@@ -379,6 +379,7 @@ def quick_fact_answer(p, question):
     identity = p["identity"]
     # 인사만 입력한 경우에는 외부 AI 호출 없이 즉시 환자로서 응답합니다.
     greeting = re.sub(r"[!！?.。~～]+", "", q)
+    greeting = re.sub(r"^(?:안녕하세요|안녕하십니까|안녕|반갑습니다|반가워요)(?:[,，]?(?:[가-힣]{2,5})(?:님|씨|환자분))$", "안녕하세요", greeting)
     if greeting in ("안녕", "안녕하세요", "안녕하십니까", "반갑습니다", "반가워요", "좋은아침입니다", "좋은아침이에요", "안녕하세요환자분", "반갑습니다환자분"):
         return "네, 안녕하세요."
     if greeting in ("감사합니다", "고맙습니다", "감사해요", "고마워요"):
@@ -420,7 +421,6 @@ def request_patient_reply(history, prompt):
             temperature=0.2,
             max_output_tokens=220,
             thinking_config=types.ThinkingConfig(thinking_budget=0),
-            http_options=types.HttpOptions(timeout=15000),
         ),
     )
 
