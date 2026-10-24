@@ -162,9 +162,9 @@ def clinical_record_lines(patient_id, identity):
     if not record:
         return lines + ["상세 의학적 기록은 아직 제공되지 않았습니다. (기존 환자 자료 유지)"]
     lines.append(f"기록 시점: {record['record_date']}")
-    for label, key in [("활력징후", "vitals"), ("과거력·동반질환", "history"),
-                       ("복용 약물", "medications"), ("계통별 검토", "systems_review"),
-                       ("주의사항", "precautions")]:
+    for label, key in [("과거력·동반질환", "history"),
+                       ("복용 약물", "medications"), ("계통별 문진 및 진찰 소견", "systems_review"),
+                       ("금기·주의사항", "precautions")]:
         lines.append(f"■ {label}")
         lines.extend("  • " + v for v in record[key])
     lines.append("※ 교육용 가상 기록이며 미제공 항목은 정상으로 간주하지 않습니다.")
@@ -456,40 +456,51 @@ with chat_col:
         st.rerun()
 
 with result_col:
-    st.subheader("📋 의뢰·검사 결과")
-    if st.session_state.report_requested:
-        with st.expander("📄 기존 의뢰 기록", expanded=True):
+    st.subheader("📋 기본 진료 기록")
+    st.caption("과거력·동반질환, 복용 약물, 금기·주의사항, 계통별 문진 및 진찰 소견")
+    if not st.session_state.report_requested:
+        if st.button("기본 진료 기록 요청", key="request_basic_record"):
+            st.session_state.report_requested = True
+            st.success("기본 진료 기록이 제공되었습니다.")
+            st.rerun()
+    else:
+        with st.expander("📄 기본 진료 기록 · 확인 완료", expanded=True):
             for record_line in clinical_record_lines(selected, identity):
                 st.write(record_line)
-            st.caption("의학적 검사 결과와 물리치료 평가 결과는 아래에서 별도로 확인하세요.")
-    else:
-        st.caption("의뢰 기록은 환자 문진에서 요청하면 표시됩니다.")
-    # 의학적 검사 결과는 학생이 항목을 선택해 요청했을 때만 공개합니다.
+
+    st.subheader("🩺 의학적 검사")
+    st.caption("활력징후·혈액검사·영상검사 소견")
     medical_record = MEDICAL_RECORDS.get(selected)
     if medical_record:
-        st.markdown("#### 🏥 진료실 검사 결과 요청")
-        st.caption("필요한 의학적 기록을 선택해 요청하세요. 수치는 교육용 가상값입니다.")
-        medical_keys = list(medical_record["medical_tests"])
+        # 활력징후는 의학적 검사 영역에만 포함합니다.
+        st.markdown("**진료실 검사 결과 요청**")
+        medical_options = ["vitals"] + list(medical_record["medical_tests"])
         medical_choice = st.selectbox(
-            "요청할 의학적 검사", medical_keys,
-            format_func=lambda k: medical_record["medical_tests"][k]["name"],
+            "요청할 의학적 검사", medical_options,
+            format_func=lambda k: "활력징후" if k == "vitals" else medical_record["medical_tests"][k]["name"],
             key="medical_test_choice")
-        if st.button("선택한 진료실 검사 결과 요청", key="request_medical_test"):
+        if st.button("선택한 의학적 검사 결과 요청", key="request_medical_test"):
             if not any(item["key"] == medical_choice for item in st.session_state.medical_test_log):
-                st.session_state.medical_test_log.append({"key": medical_choice,
-                    "name": medical_record["medical_tests"][medical_choice]["name"],
-                    "lines": clinical_test_lines(selected, medical_choice)})
+                if medical_choice == "vitals":
+                    name = "활력징후"
+                    lines = ["활력징후 (수술 후 4주 외래, 교육용 가상값)"] + medical_record["vitals"]
+                else:
+                    name = medical_record["medical_tests"][medical_choice]["name"]
+                    lines = clinical_test_lines(selected, medical_choice)
+                st.session_state.medical_test_log.append({
+                    "key": medical_choice, "name": name, "lines": lines})
                 st.session_state.new_medical_key = medical_choice
-                st.success("새 진료실 검사 결과가 추가되었습니다. 아래에서 확인하세요.")
+                st.success("새 의학적 검사 결과가 추가되었습니다.")
             else:
-                st.info("이미 요청한 검사입니다. 아래 결과에서 다시 확인할 수 있습니다.")
+                st.info("이미 요청한 검사입니다. 아래에서 다시 확인할 수 있습니다.")
         for item in st.session_state.medical_test_log:
             fresh = item["key"] == st.session_state.get("new_medical_key")
             with st.expander(item["name"] + (" · 🆕 새 결과" if fresh else " · 확인 완료"), expanded=fresh):
                 for line in item["lines"]:
                     st.write(line)
 
-    st.subheader("🔎 추가 검사 시행")
+    st.subheader("🧪 추가 검사")
+    st.caption("물리치료 평가: ROM, MMT, 감각·균형·보행검사 등")
     st.caption("필요한 검사를 선택하고 선택 이유를 작성하세요.")
     keys = list(patient["objective"])
 
@@ -557,20 +568,20 @@ def make_pdf():
     story.append(Paragraph("S. Subjective - 문진 기록", heading))
     for msg in st.session_state.messages:
         add_lines(("학생" if msg["role"] == "user" else "환자") + ": " + msg["content"])
-    story.append(Paragraph("O. Objective - 기존 기록", heading))
+    story.append(Paragraph("O. Objective - 기본 진료 기록", heading))
     if st.session_state.report_requested:
         for record_line in clinical_record_lines(selected, identity):
             add_lines(record_line)
     else:
         add_lines("의뢰 기록 미요청")
-    story.append(Paragraph("O. Objective - 요청한 진료실 검사 결과", heading))
+    story.append(Paragraph("O. Objective - 의학적 검사 결과", heading))
     if st.session_state.medical_test_log:
         for item in st.session_state.medical_test_log:
             for line in item["lines"]:
                 add_lines(line)
     else:
-        add_lines("추가 의학적 검사 결과 미요청")
-    story.append(Paragraph("O. Objective - 추가 검사", heading))
+        add_lines("의학적 검사 결과 미요청")
+    story.append(Paragraph("O. Objective - 추가 검사(물리치료 평가) 결과", heading))
     for i, entry in enumerate(st.session_state.exam_log, 1):
         add_lines(f"{i}. {entry['name']}")
         add_lines("선택 이유: " + entry["reason"])
