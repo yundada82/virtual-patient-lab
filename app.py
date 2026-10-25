@@ -579,29 +579,34 @@ with chat_col:
         key="patient_chat_input",
         disabled=bool(st.session_state.get("reply_pending") or st.session_state.get("reply_error") or user_count >= 20),
     )
-    # AI 답변 후 실제 입력창이 활성화된 것을 확인한 뒤 포커스를 복원합니다.
-    # Streamlit 렌더링이 늦어질 수 있으므로 짧은 시간 동안 재확인합니다.
+    # 매 답변마다 서로 다른 HTML을 렌더링해 Streamlit이 동일한 스크립트를
+    # 재사용하지 않도록 합니다. 포커스는 DOM 렌더링 완료 후 다시 확인합니다.
     if st.session_state.pop("focus_chat_after_reply", False) and user_count < 20:
-        st.html("""
-        <script>
-        (() => {
+        st.html(f"""
+        <script data-chat-focus-turn="{user_count}">
+        (() => {{
+          const turn = {user_count};
           const selector = '[data-testid="stChatInput"] textarea, [data-testid="stChatInput"] [contenteditable="true"]';
+          // 이전 시도의 지연 타이머가 다음 질문 중 포커스를 훔치지 않게 처리합니다.
+          window.__vplFocusTurn = turn;
           let attempts = 0;
-          const maxAttempts = 40;
-          function tryFocus() {
+          function restore() {{
+            if (window.__vplFocusTurn !== turn) return;
             const input = document.querySelector(selector);
-            if (input && !input.disabled && input.getAttribute('aria-disabled') !== 'true') {
-              input.focus({preventScroll: true});
-              if (document.activeElement === input) {
-                const length = (input.value || '').length;
-                if (typeof input.setSelectionRange === 'function') input.setSelectionRange(length, length);
+            if (input && !input.disabled && input.getAttribute('aria-disabled') !== 'true') {{
+              input.focus({{preventScroll: true}});
+              if (document.activeElement === input) {{
+                if (typeof input.setSelectionRange === 'function') {{
+                  const pos = (input.value || '').length;
+                  input.setSelectionRange(pos, pos);
+                }}
                 return;
-              }
-            }
-            if (++attempts < maxAttempts) window.setTimeout(tryFocus, 150);
-          }
-          window.setTimeout(tryFocus, 200);
-        })();
+              }}
+            }}
+            if (++attempts < 50) setTimeout(restore, 120);
+          }}
+          requestAnimationFrame(() => setTimeout(restore, 180));
+        }})();
         </script>
         """, unsafe_allow_javascript=True)
     if user_count >= 20:
