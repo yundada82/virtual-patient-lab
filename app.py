@@ -579,30 +579,35 @@ with chat_col:
         key="patient_chat_input",
         disabled=bool(st.session_state.get("reply_pending") or st.session_state.get("reply_error") or user_count >= 20),
     )
-    # 답변 직후 질문 입력창에 커서를 복귀시킵니다. Streamlit 버전/브라우저에 따라
-    # iframe에서 상위 문서 접근이 제한되면 자동 포커스가 적용되지 않을 수 있습니다.
+    # st.html(unsafe_allow_javascript=True)는 iframe이 아닌 현재 페이지에서 실행됩니다.
+    # 기존 components.html iframe은 상위 입력창 포커스가 차단될 수 있어 사용하지 않습니다.
     if st.session_state.pop("focus_chat_after_reply", False) and user_count < 20:
-        components.html("""
+        focus_script = """
         <script>
-        (function () {
+        (() => {
+          const selector = '[data-testid="stChatInput"] textarea, [data-testid="stChatInput"] [contenteditable="true"]';
           let attempts = 0;
-          function focusChat() {
-            try {
-              const doc = window.parent.document;
-              const input = doc.querySelector('[data-testid="stChatInput"] textarea, [data-testid="stChatInput"] [contenteditable="true"]');
-              if (input && !input.disabled && input.getAttribute('aria-disabled') !== 'true') {
-                input.focus({preventScroll: true});
-                const length = (input.value || input.textContent || '').length;
-                if (typeof input.setSelectionRange === 'function') input.setSelectionRange(length, length);
-                return;
+          const restoreFocus = () => {
+            const input = document.querySelector(selector);
+            if (input && !input.disabled && input.getAttribute('aria-disabled') !== 'true') {
+              input.focus({ preventScroll: true });
+              const length = (input.value || input.textContent || '').length;
+              if (typeof input.setSelectionRange === 'function') {
+                input.setSelectionRange(length, length);
               }
-            } catch (e) { return; }
-            if (++attempts < 12) window.setTimeout(focusChat, 150);
-          }
-          window.setTimeout(focusChat, 120);
+              return;
+            }
+            if (++attempts < 25) setTimeout(restoreFocus, 120);
+          };
+          requestAnimationFrame(() => setTimeout(restoreFocus, 100));
         })();
         </script>
-        """, height=0)
+        """
+        # Streamlit 1.52+에서 지원. 구버전에서는 안전하게 안내만 표시합니다.
+        try:
+            st.html(focus_script, unsafe_allow_javascript=True)
+        except TypeError:
+            st.caption("자동 커서 이동을 사용하려면 Streamlit 1.52 이상이 필요합니다.")
     if user_count >= 20:
         st.caption("이번 실습의 질문 횟수 제한(20회)에 도달했습니다.")
     if question and user_count < 20:
