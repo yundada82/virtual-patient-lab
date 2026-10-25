@@ -579,35 +579,31 @@ with chat_col:
         key="patient_chat_input",
         disabled=bool(st.session_state.get("reply_pending") or st.session_state.get("reply_error") or user_count >= 20),
     )
-    # st.html(unsafe_allow_javascript=True)는 iframe이 아닌 현재 페이지에서 실행됩니다.
-    # 기존 components.html iframe은 상위 입력창 포커스가 차단될 수 있어 사용하지 않습니다.
+    # AI 답변 후 실제 입력창이 활성화된 것을 확인한 뒤 포커스를 복원합니다.
+    # Streamlit 렌더링이 늦어질 수 있으므로 짧은 시간 동안 재확인합니다.
     if st.session_state.pop("focus_chat_after_reply", False) and user_count < 20:
-        focus_script = """
+        st.html("""
         <script>
         (() => {
           const selector = '[data-testid="stChatInput"] textarea, [data-testid="stChatInput"] [contenteditable="true"]';
           let attempts = 0;
-          const restoreFocus = () => {
+          const maxAttempts = 40;
+          function tryFocus() {
             const input = document.querySelector(selector);
             if (input && !input.disabled && input.getAttribute('aria-disabled') !== 'true') {
-              input.focus({ preventScroll: true });
-              const length = (input.value || input.textContent || '').length;
-              if (typeof input.setSelectionRange === 'function') {
-                input.setSelectionRange(length, length);
+              input.focus({preventScroll: true});
+              if (document.activeElement === input) {
+                const length = (input.value || '').length;
+                if (typeof input.setSelectionRange === 'function') input.setSelectionRange(length, length);
+                return;
               }
-              return;
             }
-            if (++attempts < 25) setTimeout(restoreFocus, 120);
-          };
-          requestAnimationFrame(() => setTimeout(restoreFocus, 100));
+            if (++attempts < maxAttempts) window.setTimeout(tryFocus, 150);
+          }
+          window.setTimeout(tryFocus, 200);
         })();
         </script>
-        """
-        # Streamlit 1.52+에서 지원. 구버전에서는 안전하게 안내만 표시합니다.
-        try:
-            st.html(focus_script, unsafe_allow_javascript=True)
-        except TypeError:
-            st.caption("자동 커서 이동을 사용하려면 Streamlit 1.52 이상이 필요합니다.")
+        """, unsafe_allow_javascript=True)
     if user_count >= 20:
         st.caption("이번 실습의 질문 횟수 제한(20회)에 도달했습니다.")
     if question and user_count < 20:
