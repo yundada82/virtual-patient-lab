@@ -1,4 +1,3 @@
-# virtual-patient-lab
 # Virtual Patient Lab
 ### AI-Based Virtual Patient Simulation for Physical Therapy Education
 
