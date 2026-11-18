@@ -333,9 +333,21 @@ if not selected or selected not in PATIENTS:
     <style>
       .stApp { background: linear-gradient(125deg, #fbfaf6 0%, #ffffff 55%, #edf7f5 100%); }
       .block-container { max-width: 1220px; padding-top: 2.2rem; padding-bottom: 2rem; }
+      .vpl-menu-shell {background:#fff; border-bottom:1px solid #e4eeeb; padding:10px 0 5px; margin-bottom:20px;}
+      .vpl-nav-title {white-space:nowrap; font-size:1.33rem; letter-spacing:-.7px;}
+      div[data-testid="stRadio"] label {border-radius:9px; padding:9px 12px; transition:background .2s;}
+      div[data-testid="stRadio"] label:has(input:checked) {background:#e6f3f1; color:#086f72; font-weight:800;}
       .vpl-brand { display:flex; align-items:center; gap:13px; font-size:1.4rem; font-weight:800;
                    color:#153e43; letter-spacing:-.6px; padding-bottom:18px; border-bottom:1px solid #dce9e7; }
       .vpl-brand small { font-size:.82rem; font-weight:500; color:#67817e; letter-spacing:0; }
+      .vpl-nav-title { font-size:1.35rem; font-weight:800; color:#173e42; padding:5px 0 10px; }
+      div[data-testid="stRadio"] > div { gap:1.1rem; }
+      div[data-testid="stRadio"] label { border-radius:9px; padding:7px 12px; }
+      .vpl-section-heading {font-size:2rem; font-weight:800; color:#153e43; margin:35px 0 14px;}
+      .vpl-lead {font-size:1.04rem; line-height:1.9; color:#55716f; margin-bottom:22px;}
+      .vpl-info-card {background:white; border:1px solid #dfebe8; border-radius:16px; padding:22px; margin:9px 0; min-height:150px; box-shadow:0 8px 25px rgba(25,70,70,.04);}
+      .vpl-info-card h3 {font-size:1.12rem; color:#176e70; margin:0 0 10px;}
+      .vpl-info-card p {font-size:.91rem; line-height:1.75; color:#526e6b; margin:0;}
       .vpl-kicker { font-size:.78rem; letter-spacing:2px; font-weight:750; color:#187a79;
                     margin-top:60px; margin-bottom:15px; }
       .vpl-hero-title { font-size:clamp(2rem,3.5vw,3.35rem); font-weight:850; line-height:1.27;
@@ -348,7 +360,7 @@ if not selected or selected not in PATIENTS:
       div[data-testid="stForm"] div[data-testid="stTextInput"] input { border-radius:10px; }
       div[data-testid="stForm"] button[kind="primary"] { background:#137a79; border-color:#137a79;
                                                         border-radius:10px; font-weight:750; min-height:44px; }
-      .vpl-visual { margin-top:60px; padding:28px; border-radius:30px;
+      .vpl-visual { margin-top:38px; padding:28px; border-radius:30px;
                     background:linear-gradient(145deg,#e4f3ef,#f7faf7); border:1px solid #d8e9e4;
                     box-shadow:0 20px 65px rgba(15,80,77,.09); }
       .vpl-visual-top { color:#557d7a; font-size:.75rem; letter-spacing:1.4px; font-weight:800; }
@@ -364,54 +376,152 @@ if not selected or selected not in PATIENTS:
       .vpl-soap-text { font-size:.84rem; color:#547270; line-height:1.6; }
       .vpl-soap-text b { display:block; color:#2b4c4d; font-size:.89rem; }
       .vpl-visual-foot { text-align:center; font-size:.78rem; color:#638581; margin-top:24px; }
-      .vpl-features { display:flex; flex-wrap:wrap; gap:12px; margin-top:32px; }
+      .vpl-features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:32px; }
+      .vpl-feature {min-height:94px;}
+      .vpl-feature b {display:block; font-size:.97rem; color:#194f51; margin-bottom:6px;}
+      .vpl-feature span {display:block; font-size:.78rem; color:#728785; font-weight:400;}
+      .vpl-hero-intro {font-size:.77rem; letter-spacing:2px; color:#177c7c; font-weight:800;}
+      .vpl-hero-photo {margin-top:38px; position:relative; overflow:hidden; height:370px; border-radius:42% 16px 18px 18px; background:linear-gradient(135deg,#e4f1ee,#f5f9f8 60%,#e0eeeb); border:1px solid #d8e9e4;}
+      .vpl-hero-photo svg {display:block; width:100%; height:100%;}
+      .vpl-photo-caption {text-align:center; color:#64847e; font-size:.8rem; margin-top:10px;}
+      @media(max-width:750px) {.vpl-features {grid-template-columns:1fr;} .vpl-hero-photo {height:290px;margin-top:8px;}}
       .vpl-feature { padding:12px 16px; background:rgba(255,255,255,.75); border:1px solid #e2edeb;
                      border-radius:12px; font-size:.83rem; color:#446d69; font-weight:650; }
       @media(max-width:750px) { .vpl-kicker {margin-top:24px;} .vpl-visual {margin-top:15px;}
                                 .vpl-brand {flex-wrap:wrap;} .vpl-hero-title {letter-spacing:-1px;} }
     </style>
-    <div class="vpl-brand">🩺 Virtual Patient Lab <small>│ 임상의사결정 실습 플랫폼</small></div>
     """, unsafe_allow_html=True)
-    left, right = st.columns([1.1, 0.9], gap="large", vertical_alignment="top")
-    with left:
+    top_brand, top_nav = st.columns([1.1, 1.6], vertical_alignment="center", gap="medium")
+    with top_brand:
+        st.markdown('<div class="vpl-nav-title">🩺 Virtual Patient Lab <span style="font-size:.76rem;font-weight:500;color:#69827f">| 임상의사결정 실습 플랫폼</span></div>', unsafe_allow_html=True)
+    with top_nav:
+        page = st.radio("페이지 이동", ["홈", "실습 안내", "가상 환자 소개", "이용 가이드"],
+                        horizontal=True, label_visibility="collapsed", key="vpl_public_page")
+    st.markdown('<div style="border-bottom:1px solid #e1eae8;margin:4px 0 10px"></div>', unsafe_allow_html=True)
+    if page == "홈":
+        left, right = st.columns([1.1, 0.9], gap="large", vertical_alignment="top")
+        with left:
+            st.markdown("""
+            <div class="vpl-kicker">VIRTUAL PATIENT SIMULATION</div>
+            <div class="vpl-hero-title">가상 환자와 함께하는<br><em>임상의사결정 실습</em></div>
+            <div class="vpl-description">환자 문진과 신체검사를 통해 임상정보를 수집하고,<br>
+            SOAP 기반의 평가와 치료계획을 수립해 보세요.</div>
+            """, unsafe_allow_html=True)
+            with st.form("patient_lookup"):
+                st.markdown("<div class='vpl-input-title'>👤 배정받은 환자의 이름을 입력하세요</div>", unsafe_allow_html=True)
+                typed_name = st.text_input("환자 이름", placeholder="예: 박영숙", label_visibility="collapsed")
+                lookup = st.form_submit_button("실습 환자 불러오기  →", type="primary", use_container_width=True)
+            if lookup:
+                matched = name_to_id.get(re.sub(r"\s+", "", typed_name))
+                if matched:
+                    new_session(matched)
+                    st.rerun()
+                else:
+                    st.warning("해당 이름의 환자를 찾지 못했습니다. 배정받은 환자 이름을 확인해 주세요.")
+        with right:
+            st.markdown("""
+            <div class="vpl-hero-photo" role="img" aria-label="SOAP 임상기록지, 청진기와 노트북을 표현한 의료 실습 일러스트">
+              <svg viewBox="0 0 600 420" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                  <linearGradient id="desk" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#edf6f3"/><stop offset="1" stop-color="#d6e9e5"/></linearGradient>
+                  <filter id="shadow"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#386b67" flood-opacity=".18"/></filter>
+                </defs>
+                <rect width="600" height="420" fill="url(#desk)"/>
+                <circle cx="505" cy="72" r="124" fill="#f8fbfa" opacity=".7"/>
+                <rect x="290" y="56" width="263" height="171" rx="13" fill="#365b62" filter="url(#shadow)"/>
+                <rect x="304" y="70" width="234" height="137" rx="6" fill="#f5faf9"/>
+                <rect x="327" y="92" width="60" height="60" rx="9" fill="#c5e1dc"/>
+                <circle cx="357" cy="113" r="13" fill="#7eaaa3"/><path d="M337 145q20-30 40 0" fill="#7eaaa3"/>
+                <path d="M405 102h108M405 120h91M405 140h102M326 175h187" stroke="#c4dcd8" stroke-width="7" stroke-linecap="round"/>
+                <path d="M270 226h300l24 19H252z" fill="#739a9a"/>
+                <g transform="translate(72 65) rotate(-8 150 160)" filter="url(#shadow)">
+                  <rect x="13" y="18" width="265" height="320" rx="12" fill="#d4b89d"/>
+                  <rect x="24" y="28" width="242" height="298" rx="7" fill="#fff"/>
+                  <rect x="115" y="7" width="64" height="29" rx="9" fill="#73958f"/>
+                  <text x="48" y="76" fill="#235c60" font-size="21" font-weight="bold">SOAP Clinical Note</text>
+                  <path d="M48 89h195" stroke="#e4ecea" stroke-width="2"/>
+                  <g font-size="18" font-weight="bold" fill="#187d7a">
+                    <text x="48" y="130">S</text><text x="48" y="180">O</text><text x="48" y="230">A</text><text x="48" y="280">P</text>
+                  </g>
+                  <g stroke="#bfd8d3" stroke-width="5" stroke-linecap="round">
+                    <path d="M82 124h147M82 138h117M82 174h147M82 188h128M82 224h147M82 238h105M82 274h147M82 288h121"/>
+                  </g>
+                </g>
+                <g fill="none" stroke="#187c80" stroke-width="12" stroke-linecap="round">
+                  <path d="M410 289q-40-36-62 8t22 64q40 16 63-14"/>
+                  <path d="M433 347q28 18 55-5"/>
+                </g>
+                <circle cx="493" cy="335" r="21" fill="#e3f1ed" stroke="#187c80" stroke-width="9"/>
+                <circle cx="493" cy="335" r="9" fill="#b8d7d1"/>
+              </svg>
+            </div>
+            <div class="vpl-photo-caption">문진 · 평가 · 임상적 판단 · 치료계획</div>
+            """, unsafe_allow_html=True)
         st.markdown("""
-        <div class="vpl-kicker">VIRTUAL PATIENT SIMULATION</div>
-        <div class="vpl-hero-title">가상 환자와 함께하는<br><em>임상의사결정 실습</em></div>
-        <div class="vpl-description">환자 문진과 신체검사를 통해 임상정보를 수집하고,<br>
-        SOAP 기반의 평가와 치료계획을 수립해 보세요.</div>
-        """, unsafe_allow_html=True)
-        with st.form("patient_lookup"):
-            st.markdown("<div class='vpl-input-title'>👤 배정받은 환자의 이름을 입력하세요</div>", unsafe_allow_html=True)
-            typed_name = st.text_input("환자 이름", placeholder="예: 박영숙", label_visibility="collapsed")
-            lookup = st.form_submit_button("실습 환자 불러오기  →", type="primary", use_container_width=True)
-        if lookup:
-            matched = name_to_id.get(re.sub(r"\s+", "", typed_name))
-            if matched:
-                new_session(matched)
-                st.rerun()
-            else:
-                st.warning("해당 이름의 환자를 찾지 못했습니다. 배정받은 환자 이름을 확인해 주세요.")
-    with right:
-        st.markdown("""
-        <div class="vpl-visual">
-          <div class="vpl-visual-top">CLINICAL REASONING WORKSPACE</div>
-          <div class="vpl-sheet">
-            <div class="vpl-sheet-head">📋 SOAP Clinical Note <span class="vpl-pill">PRACTICE</span></div>
-            <div class="vpl-soap-row"><span class="vpl-soap-letter">S</span><span class="vpl-soap-text"><b>Subjective</b>환자 문진 · 증상 및 병력 확인</span></div>
-            <div class="vpl-soap-row"><span class="vpl-soap-letter">O</span><span class="vpl-soap-text"><b>Objective</b>신체검사 · 객관적 평가자료 수집</span></div>
-            <div class="vpl-soap-row"><span class="vpl-soap-letter">A</span><span class="vpl-soap-text"><b>Assessment</b>문제 분석 · 임상적 판단</span></div>
-            <div class="vpl-soap-row" style="border-bottom:0"><span class="vpl-soap-letter">P</span><span class="vpl-soap-text"><b>Plan</b>치료 목표 · 중재 및 재평가 계획</span></div>
+          <div class="vpl-features">
+            <div class="vpl-feature"><b>♧ 가상 환자 7개 사례</b><span>근골격계 및 신경계 임상 상황 경험</span></div>
+            <div class="vpl-feature"><b>☑ 체계적인 임상추론</b><span>S·O 정보 수집부터 A·P 작성까지</span></div>
+            <div class="vpl-feature"><b>▤ SOAP 보고서 PDF</b><span>실습 기록을 하나의 보고서로 제출</span></div>
           </div>
-          <div class="vpl-visual-foot">질문하고, 평가하고, 임상적으로 판단하는 학습 경험</div>
-        </div>
         """, unsafe_allow_html=True)
-    st.markdown("""
-      <div class="vpl-features">
-        <div class="vpl-feature">✦ 가상 환자 7개 사례</div>
-        <div class="vpl-feature">✦ 체계적인 임상추론 실습</div>
-        <div class="vpl-feature">✦ SOAP 보고서 PDF 출력</div>
-      </div>
-    """, unsafe_allow_html=True)
+    elif page == "실습 안내":
+        st.markdown('<div class="vpl-section-heading">실습 안내</div><div class="vpl-lead">Virtual Patient Lab은 물리치료학과 학생이 가상 환자와 상호작용하며 임상정보 수집부터 임상적 판단까지 연습하는 교육용 시뮬레이션 플랫폼입니다.</div>', unsafe_allow_html=True)
+        x, y = st.columns(2, gap="large")
+        with x:
+            st.markdown('<div class="vpl-info-card"><h3>🎯 교육 목적</h3><p>환자 중심의 문진, 적절한 평가 선택, 수집 정보의 통합을 통해 임상의사결정과 문제해결 과정을 연습합니다.</p></div>', unsafe_allow_html=True)
+            st.markdown('<div class="vpl-info-card"><h3>🧩 실습 방식</h3><p>배정된 환자와 대화하고, 필요한 검사와 선택 이유를 기록한 뒤 SOAP 형식의 Assessment와 Plan을 직접 작성합니다.</p></div>', unsafe_allow_html=True)
+        with y:
+            st.markdown('<div class="vpl-info-card"><h3>📚 학습 목표</h3><p>주관적·객관적 정보를 구분하고, 환자의 주요 문제를 우선순위화하며, 평가 결과에 근거한 치료 목표와 중재 계획을 수립합니다.</p></div>', unsafe_allow_html=True)
+            st.markdown('<div class="vpl-info-card"><h3>📄 실습 산출물</h3><p>문진 기록, 기본 진료기록, 의학적 검사, 추가 검사 및 학생이 작성한 A·P를 포함한 SOAP 보고서를 PDF로 제출합니다.</p></div>', unsafe_allow_html=True)
+        st.info("이 앱은 교육용 가상 환자 시뮬레이션이며 실제 환자 진료나 진단을 대신하지 않습니다.")
+    elif page == "가상 환자 소개":
+        st.markdown('<div class="vpl-section-heading">가상 환자 소개</div><div class="vpl-lead">근골격계·신경계 등 서로 다른 임상 상황을 경험할 수 있도록 7개 사례로 구성했습니다. 배정 환자의 이름을 입력해야 실습을 시작할 수 있습니다.</div>', unsafe_allow_html=True)
+        case_titles = {
+            "P01": ("인공무릎관절 전치환술", "수술 후 기능 회복과 이동 능력 평가"),
+            "P02": ("요추 추간판탈출증", "요통·방사통과 신경학적 증상 평가"),
+            "P03": ("회전근개 봉합술", "수술 후 어깨 기능과 운동 제한 평가"),
+            "P04": ("하퇴절단", "절단 후 기능과 이동 능력 평가"),
+            "P05": ("뇌졸중", "운동·감각·일상생활 기능 평가"),
+            "P06": ("척수손상", "신경학적 기능과 보행 능력 평가"),
+            "P07": ("외상성 뇌손상", "인지·균형·기능적 수행 평가"),
+        }
+        for start in (0, 3, 6):
+            cols = st.columns(3, gap="medium")
+            for offset, col in enumerate(cols):
+                idx = start + offset
+                if idx >= 7:
+                    continue
+                case_id = f"P{idx+1:02d}"
+                title, subtitle = case_titles[case_id]
+                with col:
+                    st.markdown(f'<div class="vpl-info-card"><h3>{case_id} · {title}</h3><p>{subtitle}</p><p style="margin-top:14px;color:#16807d">임상추론 시뮬레이션 사례</p></div>', unsafe_allow_html=True)
+        st.caption("학습의 공정성을 위해 환자 이름, 상세 병력, 검사 결과 및 정답은 이 화면에 공개하지 않습니다.")
+    else:
+        st.markdown('<div class="vpl-section-heading">이용 가이드</div><div class="vpl-lead">실습 시작부터 SOAP 보고서 제출까지 순서대로 진행해 보세요.</div>', unsafe_allow_html=True)
+        steps = [
+            ("01 · 환자 불러오기", "홈 화면에서 교수자가 배정한 환자의 이름을 정확히 입력하고 ‘실습 환자 불러오기’를 누릅니다."),
+            ("02 · 환자 문진(S)", "증상, 발생 시점, 악화·완화 요인, 일상생활의 어려움 등을 개방형 질문으로 확인합니다."),
+            ("03 · 기본 진료기록·의학적 검사 확인", "필요한 기록과 의학적 검사 결과를 확인하고, 임상적 의미를 검토합니다."),
+            ("04 · 추가 검사(O)", "검사 항목을 선택하고 그 검사가 필요한 이유를 작성한 뒤 결과를 확인합니다."),
+            ("05 · 임상적 판단(A)", "수집한 S·O 정보를 종합하여 핵심 문제와 그 근거, 기능적 제한을 작성합니다."),
+            ("06 · 치료계획(P)", "문제에 맞는 치료 목표, 중재 방향 및 재평가 계획을 구체적으로 작성합니다."),
+            ("07 · PDF 제출", "조 이름과 학생 이름, A·P를 작성한 후 SOAP 전체 실습 보고서를 PDF로 내려받아 제출합니다."),
+        ]
+        for title, detail in steps:
+            with st.expander(title, expanded=title.startswith("01")):
+                st.write(detail)
+        st.markdown("### 실습 질문 및 작성 예시")
+        with st.expander("문진 질문: 좋은 질문과 개선할 질문", expanded=True):
+            st.markdown("**권장:** ‘어떤 동작을 할 때 통증이 심해지나요?’ / ‘그 증상 때문에 일상생활에서 가장 어려운 활동은 무엇인가요?’")
+            st.markdown("**개선 필요:** ‘많이 아프고 걷기도 힘드시죠?’ — 여러 내용을 한꺼번에 묻고 답변을 유도할 수 있습니다.")
+        with st.expander("추가 검사 선택 이유 예시"):
+            st.markdown("**예시:** ‘계단 이동 시 어려움을 호소하여 하지 근력의 기능적 제한을 확인하기 위해 도수근력검사(MMT)를 선택하였다.’")
+            st.caption("실제 검사 선택은 배정된 환자의 병력·증상·안전상 주의사항에 따라 달라집니다.")
+        with st.expander("SOAP A·P 작성 예시"):
+            st.markdown("**A 예시:** ‘환자가 호소한 활동 제한과 객관적 평가 결과를 종합하면 하지 근력 저하가 기능적 이동에 영향을 주는 것으로 판단된다.’")
+            st.markdown("**P 예시:** ‘환자의 현재 기능 수준에 맞춘 단계적 근력 및 기능적 이동 훈련을 계획하고, 동일한 평가 도구로 경과를 재평가한다.’")
+            st.caption("위 문장은 작성 형식을 설명하는 일반 예시이며, 실제 사례의 정답이 아닙니다.")
+        st.info("질문 횟수는 현재 앱에 설정된 제한을 따릅니다. 검사 결과는 환자에게 수치를 물어보기보다 해당 검사 메뉴에서 확인하세요.")
     st.stop()
 with st.container(key="vpl_header"):
     st.markdown("<div class='vpl-title'>🩺 Virtual Patient Lab <span>임상의사결정 실습</span></div>", unsafe_allow_html=True)
