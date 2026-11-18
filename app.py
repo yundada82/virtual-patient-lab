@@ -389,11 +389,15 @@ if not selected or selected not in PATIENTS:
                      border-radius:12px; font-size:.83rem; color:#446d69; font-weight:650; }
       @media(max-width:750px) { .vpl-kicker {margin-top:24px;} .vpl-visual {margin-top:15px;}
                                 .vpl-brand {flex-wrap:wrap;} .vpl-hero-title {letter-spacing:-1px;} }
-      /* 원본 2안처럼 텍스트형 내비게이션: 라디오 표시를 숨기고 선택 탭만 밑줄 */
-      div[data-testid="stRadio"] label > div:first-child:has(input) {display:none!important;}
-      div[data-testid="stRadio"] label {background:transparent!important;border-radius:0!important;padding:9px 8px 12px!important;white-space:nowrap;}
-      div[data-testid="stRadio"] label:has(input:checked) {background:transparent!important;color:#176c70!important;border-bottom:3px solid #176c70!important;}
-      div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {font-size:.91rem!important;font-weight:600;}
+      /* 상단 메뉴는 실제 클릭 가능한 텍스트 버튼이며 선택 메뉴에만 밑줄을 표시합니다. */
+      div[data-testid="stButton"] button[kind="secondary"]:has([data-testid="stMarkdownContainer"]) {transition:color .15s ease;}
+      div[data-testid="stButton"] button[kind="secondary"]:hover {color:#176c70;}
+      button[kind="primary"][data-testid="stBaseButton-primary"] {transition:background .15s ease;}
+      .vpl-nav-title {white-space:nowrap;}
+      /* 네비게이션 버튼에만 적용: Streamlit key 기반 컨테이너 사용 */
+      [class*="st-key-vpl_nav_"] button {background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;color:#263c3d!important;font-weight:650!important;white-space:nowrap!important;padding:8px 4px 11px!important;min-height:40px!important;}
+      [class*="st-key-vpl_nav_"] button[kind="primary"] {border-bottom:3px solid #176c70!important;color:#176c70!important;}
+      [class*="st-key-vpl_nav_"] button:hover {color:#176c70!important;}
       .vpl-nav-title {font-size:1.32rem!important;letter-spacing:-.6px;}
       /* 원본 2안 하단 4개 기능 안내: 아이콘 + 제목 + 설명 */
       .vpl-features {display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:0!important;background:#f7f6f3;border-radius:22px;padding:22px 14px;margin-top:28px;box-shadow:0 8px 30px rgba(42,76,73,.05);}
@@ -410,8 +414,20 @@ if not selected or selected not in PATIENTS:
     with top_brand:
         st.markdown('<div class="vpl-nav-title">🩺 Virtual Patient Lab <span style="font-size:.76rem;font-weight:500;color:#69827f">| 임상의사결정 실습 플랫폼</span></div>', unsafe_allow_html=True)
     with top_nav:
-        page = st.radio("페이지 이동", ["홈", "실습 안내", "가상 환자 소개", "이용 가이드"],
-                        horizontal=True, label_visibility="collapsed", key="vpl_public_page")
+        # 라디오 버튼 대신 텍스트 버튼으로 상단 메뉴를 구성합니다.
+        if "vpl_public_page" not in st.session_state:
+            st.session_state.vpl_public_page = "홈"
+        nav_items = ["홈", "실습 안내", "가상 환자 소개", "이용 가이드"]
+        nav_cols = st.columns([0.65, 1.0, 1.4, 1.1], gap="small")
+        for nav_label, nav_col in zip(nav_items, nav_cols):
+            with nav_col:
+                is_active = st.session_state.vpl_public_page == nav_label
+                if st.button(nav_label, key=f"vpl_nav_{nav_items.index(nav_label)}",
+                             type="primary" if is_active else "secondary",
+                             use_container_width=True):
+                    st.session_state.vpl_public_page = nav_label
+                    st.rerun()
+        page = st.session_state.vpl_public_page
     st.markdown('<div style="border-bottom:1px solid #e1eae8;margin:4px 0 10px"></div>', unsafe_allow_html=True)
     if page == "홈":
         left, right = st.columns([1.1, 0.9], gap="large", vertical_alignment="top")
@@ -491,16 +507,25 @@ if not selected or selected not in PATIENTS:
             st.markdown('<div class="vpl-info-card"><h3>📄 실습 산출물</h3><p>문진 기록, 기본 진료기록, 의학적 검사, 추가 검사 및 학생이 작성한 A·P를 포함한 SOAP 보고서를 PDF로 제출합니다.</p></div>', unsafe_allow_html=True)
         st.info("이 앱은 교육용 가상 환자 시뮬레이션이며 실제 환자 진료나 진단을 대신하지 않습니다.")
     elif page == "가상 환자 소개":
-        st.markdown('<div class="vpl-section-heading">가상 환자 소개</div><div class="vpl-lead">근골격계·신경계 등 서로 다른 임상 상황을 경험할 수 있도록 7개 사례로 구성했습니다. 배정 환자의 이름을 입력해야 실습을 시작할 수 있습니다.</div>', unsafe_allow_html=True)
-        case_titles = {
-            "P01": ("인공무릎관절 전치환술", "수술 후 기능 회복과 이동 능력 평가"),
-            "P02": ("요추 추간판탈출증", "요통·방사통과 신경학적 증상 평가"),
-            "P03": ("회전근개 봉합술", "수술 후 어깨 기능과 운동 제한 평가"),
-            "P04": ("하퇴절단", "절단 후 기능과 이동 능력 평가"),
-            "P05": ("뇌졸중", "운동·감각·일상생활 기능 평가"),
-            "P06": ("척수손상", "신경학적 기능과 보행 능력 평가"),
-            "P07": ("외상성 뇌손상", "인지·균형·기능적 수행 평가"),
+        st.markdown('<div class="vpl-section-heading">가상 환자 소개</div><div class="vpl-lead">서로 다른 임상 상황을 가진 7명의 가상 환자를 만나보세요. 각 사례의 기본 정보와 학습 주제를 소개합니다.</div>', unsafe_allow_html=True)
+        case_summaries = {
+            "P01": "인공무릎관절 전치환술 후 회복 중인 환자입니다. 무릎 기능과 일상생활에서의 이동 능력을 중심으로 임상적 문제를 탐색합니다.",
+            "P02": "요통과 하지 방사통을 호소하는 환자입니다. 증상 양상과 신경학적 기능, 일상생활의 제한을 살펴봅니다.",
+            "P03": "회전근개 봉합술 후 재활 중인 환자입니다. 어깨 통증과 움직임 제한, 기능 회복에 필요한 정보를 수집합니다.",
+            "P04": "하퇴절단 후 재활을 진행하는 환자입니다. 절단단 상태와 이동 능력, 일상생활의 어려움을 파악합니다.",
+            "P05": "뇌졸중 후 신체 기능의 변화를 경험하는 환자입니다. 운동·감각 기능과 일상생활 수행 능력을 평가합니다.",
+            "P06": "척수손상 후 재활 중인 환자입니다. 신경학적 기능과 보행 및 이동 능력의 제한을 탐색합니다.",
+            "P07": "외상성 뇌손상 후 회복 중인 환자입니다. 주의력·기억력과 균형 및 복합적인 활동 수행을 살펴봅니다.",
         }
+        st.markdown("""
+        <style>
+        .vpl-case-heading {font-size:1.18rem;font-weight:750;color:#193e41;margin:3px 0 5px;}
+        .vpl-case-meta {font-size:.86rem;color:#52706f;margin-bottom:9px;}
+        .vpl-case-summary {font-size:.9rem;line-height:1.7;color:#425a5b;min-height:104px;}
+        [class*="st-key-vpl_case_"] {border:1px solid #e1ece9;border-radius:17px;padding:17px;background:#fff;box-shadow:0 5px 18px rgba(29,79,76,.045);}
+        [class*="st-key-vpl_case_"] [data-testid="stImage"] img {border-radius:12px;object-fit:cover;aspect-ratio:4/3;width:100%;}
+        </style>
+        """, unsafe_allow_html=True)
         for start in (0, 3, 6):
             cols = st.columns(3, gap="medium")
             for offset, col in enumerate(cols):
@@ -508,10 +533,19 @@ if not selected or selected not in PATIENTS:
                 if idx >= 7:
                     continue
                 case_id = f"P{idx+1:02d}"
-                title, subtitle = case_titles[case_id]
+                case = PATIENTS[case_id]
+                ident = case["identity"]
                 with col:
-                    st.markdown(f'<div class="vpl-info-card"><h3>{case_id} · {title}</h3><p>{subtitle}</p><p style="margin-top:14px;color:#16807d">임상추론 시뮬레이션 사례</p></div>', unsafe_allow_html=True)
-        st.caption("학습의 공정성을 위해 환자 이름, 상세 병력, 검사 결과 및 정답은 이 화면에 공개하지 않습니다.")
+                    with st.container(key=f"vpl_case_{case_id}"):
+                        photo_path = Path(__file__).resolve().parent / "images" / f"{case_id}.png"
+                        if photo_path.is_file():
+                            st.image(str(photo_path), use_container_width=True)
+                        else:
+                            st.markdown('<div style="height:180px;background:#edf5f2;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:60px">👤</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="vpl-case-heading">{escape(ident["name"])} <span style="font-size:.74rem;color:#16817e">{case_id}</span></div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="vpl-case-meta">{escape(str(ident["age"]))}세 · {escape(str(ident["sex"]))} · {escape(str(ident["diagnosis"]))}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="vpl-case-summary">{escape(case_summaries[case_id])}</div>', unsafe_allow_html=True)
+        st.caption("※ 소개 내용은 교육용 개요입니다. 구체적인 병력과 검사 결과는 실습 과정에서 확인합니다.")
     else:
         st.markdown('<div class="vpl-section-heading">이용 가이드</div><div class="vpl-lead">실습 시작부터 SOAP 보고서 제출까지 순서대로 진행해 보세요.</div>', unsafe_allow_html=True)
         steps = [
