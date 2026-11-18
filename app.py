@@ -895,7 +895,7 @@ result_col, chat_col, soap_col = st.columns([2.5, 5.0, 2.5], gap="medium")
 with chat_col:
     # 환자 정보와 초기화 기능을 한 줄에 압축하여 문진 공간을 확보합니다.
     with st.container(key="patient_header"):
-        patient_info_col, reset_col, home_col = st.columns([5, 1.1, 1.7], vertical_alignment="center", gap="small")
+        patient_info_col, reset_col = st.columns([7, 1.2], vertical_alignment="center", gap="small")
         with patient_info_col:
             photo_col, detail_col = st.columns([1.6, 4.4], vertical_alignment="center", gap="small")
             with photo_col:
@@ -913,10 +913,6 @@ with chat_col:
                 if st.button("초기화 확인", type="primary", key="confirm_patient_reset"):
                     st.session_state.reset_on_next_run = True
                     st.rerun()
-        with home_col:
-            if st.button("⌂ 홈으로", key="vpl_home_near_patient", use_container_width=True, help="작성한 기록은 유지됩니다"):
-                st.session_state.vpl_public_page = "홈"
-                st.rerun()
     st.markdown("**💬 환자 문진**")
     if st.session_state.get("new_notice"):
         st.success(st.session_state.new_notice)
