@@ -573,8 +573,19 @@ if not selected or selected not in PATIENTS:
             st.caption("위 문장은 작성 형식을 설명하는 일반 예시이며, 실제 사례의 정답이 아닙니다.")
         st.info("질문 횟수는 현재 앱에 설정된 제한을 따릅니다. 검사 결과는 환자에게 수치를 물어보기보다 해당 검사 메뉴에서 확인하세요.")
     st.stop()
+# 실습 중 홈으로 이동할 때 실습 기록이 사라지지 않도록 확인을 받습니다.
 with st.container(key="vpl_header"):
-    st.markdown("<div class='vpl-title'>🩺 Virtual Patient Lab <span>임상의사결정 실습</span></div>", unsafe_allow_html=True)
+    header_title, header_home = st.columns([5, 1.4], vertical_alignment="center")
+    with header_title:
+        st.markdown("<div class='vpl-title'>🩺 Virtual Patient Lab <span>임상의사결정 실습</span></div>", unsafe_allow_html=True)
+    with header_home:
+        with st.popover("⌂ 첫 화면으로", use_container_width=True):
+            st.warning("첫 화면으로 이동하면 현재 실습 화면을 벗어납니다. 다시 환자를 불러올 때 기존 문진·검사·SOAP 기록이 초기화됩니다. 필요한 경우 먼저 PDF를 저장하세요.")
+            if st.button("첫 화면으로 이동", key="confirm_go_home", type="primary", use_container_width=True):
+                st.session_state.active_case = None
+                st.session_state.vpl_public_page = "홈"
+                st.rerun()
+
 if "medical_test_log" not in st.session_state:
     st.session_state.medical_test_log = []
 patient = PATIENTS[selected]
