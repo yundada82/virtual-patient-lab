@@ -389,6 +389,21 @@ if not selected or selected not in PATIENTS:
                      border-radius:12px; font-size:.83rem; color:#446d69; font-weight:650; }
       @media(max-width:750px) { .vpl-kicker {margin-top:24px;} .vpl-visual {margin-top:15px;}
                                 .vpl-brand {flex-wrap:wrap;} .vpl-hero-title {letter-spacing:-1px;} }
+      /* 원본 2안처럼 텍스트형 내비게이션: 라디오 표시를 숨기고 선택 탭만 밑줄 */
+      div[data-testid="stRadio"] label > div:first-child:has(input) {display:none!important;}
+      div[data-testid="stRadio"] label {background:transparent!important;border-radius:0!important;padding:9px 8px 12px!important;white-space:nowrap;}
+      div[data-testid="stRadio"] label:has(input:checked) {background:transparent!important;color:#176c70!important;border-bottom:3px solid #176c70!important;}
+      div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {font-size:.91rem!important;font-weight:600;}
+      .vpl-nav-title {font-size:1.32rem!important;letter-spacing:-.6px;}
+      /* 원본 2안 하단 4개 기능 안내: 아이콘 + 제목 + 설명 */
+      .vpl-features {display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:0!important;background:#f7f6f3;border-radius:22px;padding:22px 14px;margin-top:28px;box-shadow:0 8px 30px rgba(42,76,73,.05);}
+      .vpl-feature {border:0!important;border-right:1px solid #e0e6e2!important;border-radius:0!important;background:transparent!important;display:flex;align-items:center;gap:13px;padding:10px 15px!important;min-height:68px;}
+      .vpl-feature:last-child {border-right:0!important;}
+      .vpl-feature-icon {font-size:2rem;line-height:1;color:#277b76;flex:0 0 38px;text-align:center;}
+      .vpl-feature b {font-size:.89rem!important;margin-bottom:5px!important;color:#253938!important;}
+      .vpl-feature span {font-size:.72rem!important;line-height:1.5;}
+      @media(max-width:900px) {.vpl-features {grid-template-columns:repeat(2,minmax(0,1fr))!important;}.vpl-feature:nth-child(2){border-right:0!important;}}
+      @media(max-width:600px) {.vpl-features {grid-template-columns:1fr!important;}.vpl-feature {border-right:0!important;border-bottom:1px solid #e0e6e2!important;}.vpl-feature:last-child {border-bottom:0!important;}}
     </style>
     """, unsafe_allow_html=True)
     top_brand, top_nav = st.columns([1.1, 1.6], vertical_alignment="center", gap="medium")
@@ -459,9 +474,10 @@ if not selected or selected not in PATIENTS:
             """, unsafe_allow_html=True)
         st.markdown("""
           <div class="vpl-features">
-            <div class="vpl-feature"><b>♧ 가상 환자 7개 사례</b><span>근골격계 및 신경계 임상 상황 경험</span></div>
-            <div class="vpl-feature"><b>☑ 체계적인 임상추론</b><span>S·O 정보 수집부터 A·P 작성까지</span></div>
-            <div class="vpl-feature"><b>▤ SOAP 보고서 PDF</b><span>실습 기록을 하나의 보고서로 제출</span></div>
+            <div class="vpl-feature"><div class="vpl-feature-icon">♧</div><div><b>가상 환자 7개 사례</b><span>다양한 임상 상황 경험</span></div></div>
+            <div class="vpl-feature"><div class="vpl-feature-icon">☷</div><div><b>체계적 임상추론</b><span>S·O 수집 → A·P 수립</span></div></div>
+            <div class="vpl-feature"><div class="vpl-feature-icon">▤</div><div><b>결과지 자동 생성</b><span>실습보고서(PDF) 제출</span></div></div>
+            <div class="vpl-feature"><div class="vpl-feature-icon">♢</div><div><b>실전형 학습</b><span>문제해결 중심의 학습</span></div></div>
           </div>
         """, unsafe_allow_html=True)
     elif page == "실습 안내":
