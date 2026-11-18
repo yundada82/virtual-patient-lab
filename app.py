@@ -473,6 +473,49 @@ st.markdown("""<style>
 [class*="st-key-vpl_practice_nav"] button {background:#087d7c!important;color:white!important;border-radius:28px!important;border:0!important;font-weight:750!important;white-space:nowrap!important;}
 [class*="st-key-vpl_practice_nav"] button:hover {background:#086967!important;}
 </style>""", unsafe_allow_html=True)
+st.markdown("""<style>
+/* 메뉴와 본문을 동일한 중앙 정렬 기준에 맞춥니다. */
+.st-key-vpl_fixed_navigation {
+    width: calc(100% - 2rem) !important;
+    border-radius: 12px !important;
+    padding: .65rem 1rem !important;
+}
+.st-key-vpl_fixed_navigation [class*="st-key-vpl_nav_"] button {
+    font-size: 1.06rem !important;
+    font-weight: 700 !important;
+    min-height: 44px !important;
+}
+.st-key-vpl_fixed_navigation .vpl-nav-title {font-size: 1.4rem !important;}
+/* 최우측 실습하기 버튼만 붉은색 */
+.st-key-vpl_fixed_navigation [class*="st-key-vpl_practice_nav"] button {
+    background: #c83d4c !important;
+    border-color: #c83d4c !important;
+    color: #fff !important;
+    font-size: 1.06rem !important;
+    font-weight: 800 !important;
+    border-radius: 28px !important;
+    min-height: 44px !important;
+}
+.st-key-vpl_fixed_navigation [class*="st-key-vpl_practice_nav"] button:hover {
+    background: #ad2c3c !important;
+    border-color: #ad2c3c !important;
+}
+/* 홈 하단 4개 설명 카드 글자 크기 확대 */
+.vpl-feature b {font-size: 1.08rem !important;line-height:1.5 !important;}
+.vpl-feature span {font-size: .91rem !important;line-height:1.65 !important;}
+.vpl-feature-icon {font-size: 2.15rem !important;flex-basis:42px !important;}
+.vpl-features {padding: 24px 14px !important;}
+.vpl-feature {padding: 10px 12px !important;gap: 10px !important;}
+@media(max-width:1100px) {
+  .st-key-vpl_fixed_navigation [class*="st-key-vpl_nav_"] button {font-size:.91rem !important;}
+  .st-key-vpl_fixed_navigation .vpl-nav-title {font-size:1.05rem !important;}
+}
+@media(max-width:750px) {
+  .st-key-vpl_fixed_navigation {overflow-x:auto !important;}
+  .vpl-feature b {font-size:1rem !important;}
+  .vpl-feature span {font-size:.86rem !important;}
+}
+</style>""", unsafe_allow_html=True)
 with st.container(key="vpl_fixed_navigation"):
     top_brand, top_nav = st.columns([1.0, 1.8], vertical_alignment="center", gap="medium")
     with top_brand:
@@ -490,7 +533,16 @@ with st.container(key="vpl_fixed_navigation"):
                 st.session_state.vpl_public_page = "실습하기"
                 st.rerun()
 page = st.session_state.vpl_public_page
-
+# 화면별 본문 너비와 상단 내비게이션 너비를 일치시킵니다.
+# 실습 화면은 3열 레이아웃을 위해 더 넓게 유지합니다.
+_vpl_wide = page == "실습하기" and selected in PATIENTS
+_vpl_content_width = "1850px" if _vpl_wide else "1220px"
+st.markdown(f"""<style>
+.st-key-vpl_fixed_navigation {{ max-width: {_vpl_content_width} !important; }}
+section.main .block-container, [data-testid="stMainBlockContainer"] {{
+    max-width: {_vpl_content_width} !important;
+}}
+</style>""", unsafe_allow_html=True)
 
 if page != "실습하기" or selected not in PATIENTS:
     if page == "홈":
@@ -502,9 +554,6 @@ if page != "실습하기" or selected not in PATIENTS:
             <div class="vpl-description">환자 문진과 신체검사를 통해 임상정보를 수집하고,<br>
             SOAP 기반의 평가와 치료계획을 수립해 보세요.</div>
             """, unsafe_allow_html=True)
-            if st.button("▶ 실습하기  →", key="vpl_hero_practice", type="primary", use_container_width=False):
-                st.session_state.vpl_public_page = "실습하기"
-                st.rerun()
         with right:
             st.markdown("""
             <div class="vpl-hero-photo" role="img" aria-label="SOAP 임상기록지, 청진기와 노트북을 표현한 의료 실습 일러스트">
