@@ -321,114 +321,131 @@ def new_session(case_id):
     st.session_state.reply_error = False
     st.session_state.new_notice = None
     st.session_state.confirm_reset = False
+    st.session_state.vpl_saved_inputs = {}
 
 
-# 배정된 환자 이름으로만 시작하며, 시작 후에는 불러오기 입력란을 숨깁니다.
+# 공개 메뉴와 실습 화면을 분리하되, 실습 데이터는 같은 세션에 유지합니다.
 name_to_id = {p["identity"]["name"].replace(" ", ""): cid for cid, p in PATIENTS.items()}
 selected = st.session_state.get("active_case")
 if st.session_state.pop("reset_on_next_run", False) and selected in PATIENTS:
     new_session(selected)
-if not selected or selected not in PATIENTS:
-    st.markdown("""
-    <style>
-      .stApp { background: linear-gradient(125deg, #fbfaf6 0%, #ffffff 55%, #edf7f5 100%); }
-      .block-container { max-width: 1220px; padding-top: 2.2rem; padding-bottom: 2rem; }
-      .vpl-menu-shell {background:#fff; border-bottom:1px solid #e4eeeb; padding:10px 0 5px; margin-bottom:20px;}
-      .vpl-nav-title {white-space:nowrap; font-size:1.33rem; letter-spacing:-.7px;}
-      div[data-testid="stRadio"] label {border-radius:9px; padding:9px 12px; transition:background .2s;}
-      div[data-testid="stRadio"] label:has(input:checked) {background:#e6f3f1; color:#086f72; font-weight:800;}
-      .vpl-brand { display:flex; align-items:center; gap:13px; font-size:1.4rem; font-weight:800;
-                   color:#153e43; letter-spacing:-.6px; padding-bottom:18px; border-bottom:1px solid #dce9e7; }
-      .vpl-brand small { font-size:.82rem; font-weight:500; color:#67817e; letter-spacing:0; }
-      .vpl-nav-title { font-size:1.35rem; font-weight:800; color:#173e42; padding:5px 0 10px; }
-      div[data-testid="stRadio"] > div { gap:1.1rem; }
-      div[data-testid="stRadio"] label { border-radius:9px; padding:7px 12px; }
-      .vpl-section-heading {font-size:2rem; font-weight:800; color:#153e43; margin:35px 0 14px;}
-      .vpl-lead {font-size:1.04rem; line-height:1.9; color:#55716f; margin-bottom:22px;}
-      .vpl-info-card {background:white; border:1px solid #dfebe8; border-radius:16px; padding:22px; margin:9px 0; min-height:150px; box-shadow:0 8px 25px rgba(25,70,70,.04);}
-      .vpl-info-card h3 {font-size:1.12rem; color:#176e70; margin:0 0 10px;}
-      .vpl-info-card p {font-size:.91rem; line-height:1.75; color:#526e6b; margin:0;}
-      .vpl-kicker { font-size:.78rem; letter-spacing:2px; font-weight:750; color:#187a79;
-                    margin-top:60px; margin-bottom:15px; }
-      .vpl-hero-title { font-size:clamp(2rem,3.5vw,3.35rem); font-weight:850; line-height:1.27;
-                        letter-spacing:-2px; color:#17383c; margin:0 0 22px; }
-      .vpl-hero-title em { color:#137f7e; font-style:normal; }
-      .vpl-description { color:#627777; font-size:1.04rem; line-height:1.85; margin-bottom:30px; }
-      .vpl-input-title { font-weight:750; color:#234b4c; margin:8px 0 10px; }
-      div[data-testid="stForm"] { background:#fff; border:1px solid #e0ece9; border-radius:18px;
-                                   padding:20px 22px; box-shadow:0 12px 36px rgba(23,69,69,.06); }
-      div[data-testid="stForm"] div[data-testid="stTextInput"] input { border-radius:10px; }
-      div[data-testid="stForm"] button[kind="primary"] { background:#137a79; border-color:#137a79;
-                                                        border-radius:10px; font-weight:750; min-height:44px; }
-      .vpl-visual { margin-top:38px; padding:28px; border-radius:30px;
-                    background:linear-gradient(145deg,#e4f3ef,#f7faf7); border:1px solid #d8e9e4;
-                    box-shadow:0 20px 65px rgba(15,80,77,.09); }
-      .vpl-visual-top { color:#557d7a; font-size:.75rem; letter-spacing:1.4px; font-weight:800; }
-      .vpl-sheet { background:#fff; border-radius:20px; padding:25px 27px; margin-top:16px;
-                   box-shadow:0 12px 32px rgba(31,84,80,.09); transform:rotate(-1.5deg); }
-      .vpl-sheet-head { display:flex; align-items:center; justify-content:space-between;
-                        color:#224b4c; font-size:1.12rem; font-weight:800; padding-bottom:15px;
-                        border-bottom:1px solid #e5efec; }
-      .vpl-pill { background:#e3f4f0; color:#167c76; padding:6px 11px; border-radius:30px; font-size:.7rem; }
-      .vpl-soap-row { display:flex; gap:15px; padding:15px 0; border-bottom:1px solid #eef3f1; }
-      .vpl-soap-letter { display:grid; place-items:center; width:35px; height:35px; flex-shrink:0;
-                         border-radius:10px; background:#e9f5f2; color:#157c79; font-weight:850; }
-      .vpl-soap-text { font-size:.84rem; color:#547270; line-height:1.6; }
-      .vpl-soap-text b { display:block; color:#2b4c4d; font-size:.89rem; }
-      .vpl-visual-foot { text-align:center; font-size:.78rem; color:#638581; margin-top:24px; }
-      .vpl-features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:32px; }
-      .vpl-feature {min-height:94px;}
-      .vpl-feature b {display:block; font-size:.97rem; color:#194f51; margin-bottom:6px;}
-      .vpl-feature span {display:block; font-size:.78rem; color:#728785; font-weight:400;}
-      .vpl-hero-intro {font-size:.77rem; letter-spacing:2px; color:#177c7c; font-weight:800;}
-      .vpl-hero-photo {margin-top:38px; position:relative; overflow:hidden; height:370px; border-radius:42% 16px 18px 18px; background:linear-gradient(135deg,#e4f1ee,#f5f9f8 60%,#e0eeeb); border:1px solid #d8e9e4;}
-      .vpl-hero-photo svg {display:block; width:100%; height:100%;}
-      .vpl-photo-caption {text-align:center; color:#64847e; font-size:.8rem; margin-top:10px;}
-      @media(max-width:750px) {.vpl-features {grid-template-columns:1fr;} .vpl-hero-photo {height:290px;margin-top:8px;}}
-      .vpl-feature { padding:12px 16px; background:rgba(255,255,255,.75); border:1px solid #e2edeb;
-                     border-radius:12px; font-size:.83rem; color:#446d69; font-weight:650; }
-      @media(max-width:750px) { .vpl-kicker {margin-top:24px;} .vpl-visual {margin-top:15px;}
-                                .vpl-brand {flex-wrap:wrap;} .vpl-hero-title {letter-spacing:-1px;} }
-      /* 상단 메뉴는 실제 클릭 가능한 텍스트 버튼이며 선택 메뉴에만 밑줄을 표시합니다. */
-      div[data-testid="stButton"] button[kind="secondary"]:has([data-testid="stMarkdownContainer"]) {transition:color .15s ease;}
-      div[data-testid="stButton"] button[kind="secondary"]:hover {color:#176c70;}
-      button[kind="primary"][data-testid="stBaseButton-primary"] {transition:background .15s ease;}
-      .vpl-nav-title {white-space:nowrap;}
-      /* 네비게이션 버튼에만 적용: Streamlit key 기반 컨테이너 사용 */
-      [class*="st-key-vpl_nav_"] button {background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;color:#263c3d!important;font-weight:650!important;white-space:nowrap!important;padding:8px 4px 11px!important;min-height:40px!important;}
-      [class*="st-key-vpl_nav_"] button[kind="primary"] {border-bottom:3px solid #176c70!important;color:#176c70!important;}
-      [class*="st-key-vpl_nav_"] button:hover {color:#176c70!important;}
-      .vpl-nav-title {font-size:1.32rem!important;letter-spacing:-.6px;}
-      /* 원본 2안 하단 4개 기능 안내: 아이콘 + 제목 + 설명 */
-      .vpl-features {display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:0!important;background:#f7f6f3;border-radius:22px;padding:22px 14px;margin-top:28px;box-shadow:0 8px 30px rgba(42,76,73,.05);}
-      .vpl-feature {border:0!important;border-right:1px solid #e0e6e2!important;border-radius:0!important;background:transparent!important;display:flex;align-items:center;gap:13px;padding:10px 15px!important;min-height:68px;}
-      .vpl-feature:last-child {border-right:0!important;}
-      .vpl-feature-icon {font-size:2rem;line-height:1;color:#277b76;flex:0 0 38px;text-align:center;}
-      .vpl-feature b {font-size:.89rem!important;margin-bottom:5px!important;color:#253938!important;}
-      .vpl-feature span {font-size:.72rem!important;line-height:1.5;}
-      @media(max-width:900px) {.vpl-features {grid-template-columns:repeat(2,minmax(0,1fr))!important;}.vpl-feature:nth-child(2){border-right:0!important;}}
-      @media(max-width:600px) {.vpl-features {grid-template-columns:1fr!important;}.vpl-feature {border-right:0!important;border-bottom:1px solid #e0e6e2!important;}.vpl-feature:last-child {border-bottom:0!important;}}
-    </style>
-    """, unsafe_allow_html=True)
-    top_brand, top_nav = st.columns([1.1, 1.6], vertical_alignment="center", gap="medium")
-    with top_brand:
-        st.markdown('<div class="vpl-nav-title">🩺 Virtual Patient Lab <span style="font-size:.76rem;font-weight:500;color:#69827f">| 임상의사결정 실습 플랫폼</span></div>', unsafe_allow_html=True)
-    with top_nav:
-        # 라디오 버튼 대신 텍스트 버튼으로 상단 메뉴를 구성합니다.
-        if "vpl_public_page" not in st.session_state:
-            st.session_state.vpl_public_page = "홈"
-        nav_items = ["홈", "실습 안내", "가상 환자 소개", "이용 가이드"]
-        nav_cols = st.columns([0.65, 1.0, 1.4, 1.1], gap="small")
-        for nav_label, nav_col in zip(nav_items, nav_cols):
-            with nav_col:
-                is_active = st.session_state.vpl_public_page == nav_label
-                if st.button(nav_label, key=f"vpl_nav_{nav_items.index(nav_label)}",
-                             type="primary" if is_active else "secondary",
-                             use_container_width=True):
-                    st.session_state.vpl_public_page = nav_label
-                    st.rerun()
-        page = st.session_state.vpl_public_page
-    st.markdown('<div style="border-bottom:1px solid #e1eae8;margin:4px 0 10px"></div>', unsafe_allow_html=True)
+if "vpl_public_page" not in st.session_state:
+    st.session_state.vpl_public_page = "홈"
+
+# Streamlit은 화면에서 사라진 위젯의 key를 정리할 수 있으므로 작성 내용의 별도 사본을 보관합니다.
+PERSISTENT_INPUTS = ("student_group", "student_names", "assessment", "plan", "exam_reason", "exam_choice")
+if "vpl_saved_inputs" not in st.session_state:
+    st.session_state.vpl_saved_inputs = {}
+for field in PERSISTENT_INPUTS:
+    if field in st.session_state and st.session_state.get("vpl_public_page") == "실습하기":
+        st.session_state.vpl_saved_inputs[field] = st.session_state[field]
+
+st.markdown("""
+<style>
+  .stApp { background: linear-gradient(125deg, #fbfaf6 0%, #ffffff 55%, #edf7f5 100%); }
+  .block-container { max-width: 1220px; padding-top: 2.2rem; padding-bottom: 2rem; }
+  .vpl-menu-shell {background:#fff; border-bottom:1px solid #e4eeeb; padding:10px 0 5px; margin-bottom:20px;}
+  .vpl-nav-title {white-space:nowrap; font-size:1.33rem; letter-spacing:-.7px;}
+  div[data-testid="stRadio"] label {border-radius:9px; padding:9px 12px; transition:background .2s;}
+  div[data-testid="stRadio"] label:has(input:checked) {background:#e6f3f1; color:#086f72; font-weight:800;}
+  .vpl-brand { display:flex; align-items:center; gap:13px; font-size:1.4rem; font-weight:800;
+               color:#153e43; letter-spacing:-.6px; padding-bottom:18px; border-bottom:1px solid #dce9e7; }
+  .vpl-brand small { font-size:.82rem; font-weight:500; color:#67817e; letter-spacing:0; }
+  .vpl-nav-title { font-size:1.35rem; font-weight:800; color:#173e42; padding:5px 0 10px; }
+  div[data-testid="stRadio"] > div { gap:1.1rem; }
+  div[data-testid="stRadio"] label { border-radius:9px; padding:7px 12px; }
+  .vpl-section-heading {font-size:2rem; font-weight:800; color:#153e43; margin:35px 0 14px;}
+  .vpl-lead {font-size:1.04rem; line-height:1.9; color:#55716f; margin-bottom:22px;}
+  .vpl-info-card {background:white; border:1px solid #dfebe8; border-radius:16px; padding:22px; margin:9px 0; min-height:150px; box-shadow:0 8px 25px rgba(25,70,70,.04);}
+  .vpl-info-card h3 {font-size:1.12rem; color:#176e70; margin:0 0 10px;}
+  .vpl-info-card p {font-size:.91rem; line-height:1.75; color:#526e6b; margin:0;}
+  .vpl-kicker { font-size:.78rem; letter-spacing:2px; font-weight:750; color:#187a79;
+                margin-top:60px; margin-bottom:15px; }
+  .vpl-hero-title { font-size:clamp(2rem,3.5vw,3.35rem); font-weight:850; line-height:1.27;
+                    letter-spacing:-2px; color:#17383c; margin:0 0 22px; }
+  .vpl-hero-title em { color:#137f7e; font-style:normal; }
+  .vpl-description { color:#627777; font-size:1.04rem; line-height:1.85; margin-bottom:30px; }
+  .vpl-input-title { font-weight:750; color:#234b4c; margin:8px 0 10px; }
+  div[data-testid="stForm"] { background:#fff; border:1px solid #e0ece9; border-radius:18px;
+                               padding:20px 22px; box-shadow:0 12px 36px rgba(23,69,69,.06); }
+  div[data-testid="stForm"] div[data-testid="stTextInput"] input { border-radius:10px; }
+  div[data-testid="stForm"] button[kind="primary"] { background:#137a79; border-color:#137a79;
+                                                    border-radius:10px; font-weight:750; min-height:44px; }
+  .vpl-visual { margin-top:38px; padding:28px; border-radius:30px;
+                background:linear-gradient(145deg,#e4f3ef,#f7faf7); border:1px solid #d8e9e4;
+                box-shadow:0 20px 65px rgba(15,80,77,.09); }
+  .vpl-visual-top { color:#557d7a; font-size:.75rem; letter-spacing:1.4px; font-weight:800; }
+  .vpl-sheet { background:#fff; border-radius:20px; padding:25px 27px; margin-top:16px;
+               box-shadow:0 12px 32px rgba(31,84,80,.09); transform:rotate(-1.5deg); }
+  .vpl-sheet-head { display:flex; align-items:center; justify-content:space-between;
+                    color:#224b4c; font-size:1.12rem; font-weight:800; padding-bottom:15px;
+                    border-bottom:1px solid #e5efec; }
+  .vpl-pill { background:#e3f4f0; color:#167c76; padding:6px 11px; border-radius:30px; font-size:.7rem; }
+  .vpl-soap-row { display:flex; gap:15px; padding:15px 0; border-bottom:1px solid #eef3f1; }
+  .vpl-soap-letter { display:grid; place-items:center; width:35px; height:35px; flex-shrink:0;
+                     border-radius:10px; background:#e9f5f2; color:#157c79; font-weight:850; }
+  .vpl-soap-text { font-size:.84rem; color:#547270; line-height:1.6; }
+  .vpl-soap-text b { display:block; color:#2b4c4d; font-size:.89rem; }
+  .vpl-visual-foot { text-align:center; font-size:.78rem; color:#638581; margin-top:24px; }
+  .vpl-features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:32px; }
+  .vpl-feature {min-height:94px;}
+  .vpl-feature b {display:block; font-size:.97rem; color:#194f51; margin-bottom:6px;}
+  .vpl-feature span {display:block; font-size:.78rem; color:#728785; font-weight:400;}
+  .vpl-hero-intro {font-size:.77rem; letter-spacing:2px; color:#177c7c; font-weight:800;}
+  .vpl-hero-photo {margin-top:38px; position:relative; overflow:hidden; height:370px; border-radius:42% 16px 18px 18px; background:linear-gradient(135deg,#e4f1ee,#f5f9f8 60%,#e0eeeb); border:1px solid #d8e9e4;}
+  .vpl-hero-photo svg {display:block; width:100%; height:100%;}
+  .vpl-photo-caption {text-align:center; color:#64847e; font-size:.8rem; margin-top:10px;}
+  @media(max-width:750px) {.vpl-features {grid-template-columns:1fr;} .vpl-hero-photo {height:290px;margin-top:8px;}}
+  .vpl-feature { padding:12px 16px; background:rgba(255,255,255,.75); border:1px solid #e2edeb;
+                 border-radius:12px; font-size:.83rem; color:#446d69; font-weight:650; }
+  @media(max-width:750px) { .vpl-kicker {margin-top:24px;} .vpl-visual {margin-top:15px;}
+                            .vpl-brand {flex-wrap:wrap;} .vpl-hero-title {letter-spacing:-1px;} }
+  /* 상단 메뉴는 실제 클릭 가능한 텍스트 버튼이며 선택 메뉴에만 밑줄을 표시합니다. */
+  div[data-testid="stButton"] button[kind="secondary"]:has([data-testid="stMarkdownContainer"]) {transition:color .15s ease;}
+  div[data-testid="stButton"] button[kind="secondary"]:hover {color:#176c70;}
+  button[kind="primary"][data-testid="stBaseButton-primary"] {transition:background .15s ease;}
+  .vpl-nav-title {white-space:nowrap;}
+  /* 네비게이션 버튼에만 적용: Streamlit key 기반 컨테이너 사용 */
+  [class*="st-key-vpl_nav_"] button {background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;color:#263c3d!important;font-weight:650!important;white-space:nowrap!important;padding:8px 4px 11px!important;min-height:40px!important;}
+  [class*="st-key-vpl_nav_"] button[kind="primary"] {border-bottom:3px solid #176c70!important;color:#176c70!important;}
+  [class*="st-key-vpl_nav_"] button:hover {color:#176c70!important;}
+  .vpl-nav-title {font-size:1.32rem!important;letter-spacing:-.6px;}
+  /* 원본 2안 하단 4개 기능 안내: 아이콘 + 제목 + 설명 */
+  .vpl-features {display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:0!important;background:#f7f6f3;border-radius:22px;padding:22px 14px;margin-top:28px;box-shadow:0 8px 30px rgba(42,76,73,.05);}
+  .vpl-feature {border:0!important;border-right:1px solid #e0e6e2!important;border-radius:0!important;background:transparent!important;display:flex;align-items:center;gap:13px;padding:10px 15px!important;min-height:68px;}
+  .vpl-feature:last-child {border-right:0!important;}
+  .vpl-feature-icon {font-size:2rem;line-height:1;color:#277b76;flex:0 0 38px;text-align:center;}
+  .vpl-feature b {font-size:.89rem!important;margin-bottom:5px!important;color:#253938!important;}
+  .vpl-feature span {font-size:.72rem!important;line-height:1.5;}
+  @media(max-width:900px) {.vpl-features {grid-template-columns:repeat(2,minmax(0,1fr))!important;}.vpl-feature:nth-child(2){border-right:0!important;}}
+  @media(max-width:600px) {.vpl-features {grid-template-columns:1fr!important;}.vpl-feature {border-right:0!important;border-bottom:1px solid #e0e6e2!important;}.vpl-feature:last-child {border-bottom:0!important;}}
+</style>
+""", unsafe_allow_html=True)
+
+# 상단 내비게이션은 모든 화면에서 같은 위치에 표시됩니다.
+st.markdown("""<style>
+[class*="st-key-vpl_practice_nav"] button {background:#087d7c!important;color:white!important;border-radius:28px!important;border:0!important;font-weight:750!important;white-space:nowrap!important;}
+[class*="st-key-vpl_practice_nav"] button:hover {background:#086967!important;}
+</style>""", unsafe_allow_html=True)
+top_brand, top_nav = st.columns([1.0, 1.8], vertical_alignment="center", gap="medium")
+with top_brand:
+    st.markdown('<div class="vpl-nav-title">🩺 Virtual Patient Lab <span style="font-size:.76rem;font-weight:500;color:#69827f">| 임상의사결정 실습 플랫폼</span></div>', unsafe_allow_html=True)
+with top_nav:
+    nav_items = ["홈", "실습 안내", "가상 환자 소개", "이용 가이드"]
+    nav_cols = st.columns([.7, 1.1, 1.45, 1.05, 1.45], gap="small")
+    for index, label in enumerate(nav_items):
+        with nav_cols[index]:
+            if st.button(label, key=f"vpl_nav_{index}", type="primary" if st.session_state.vpl_public_page == label else "secondary", use_container_width=True):
+                st.session_state.vpl_public_page = label
+                st.rerun()
+    with nav_cols[-1]:
+        if st.button("▶ 실습하기", key="vpl_practice_nav", use_container_width=True):
+            st.session_state.vpl_public_page = "실습하기"
+            st.rerun()
+page = st.session_state.vpl_public_page
+st.markdown('<div style="border-bottom:1px solid #e1eae8;margin:4px 0 10px"></div>', unsafe_allow_html=True)
+
+if page != "실습하기" or selected not in PATIENTS:
     if page == "홈":
         left, right = st.columns([1.1, 0.9], gap="large", vertical_alignment="top")
         with left:
@@ -438,17 +455,9 @@ if not selected or selected not in PATIENTS:
             <div class="vpl-description">환자 문진과 신체검사를 통해 임상정보를 수집하고,<br>
             SOAP 기반의 평가와 치료계획을 수립해 보세요.</div>
             """, unsafe_allow_html=True)
-            with st.form("patient_lookup"):
-                st.markdown("<div class='vpl-input-title'>👤 배정받은 환자의 이름을 입력하세요</div>", unsafe_allow_html=True)
-                typed_name = st.text_input("환자 이름", placeholder="예: 박영숙", label_visibility="collapsed")
-                lookup = st.form_submit_button("실습 환자 불러오기  →", type="primary", use_container_width=True)
-            if lookup:
-                matched = name_to_id.get(re.sub(r"\s+", "", typed_name))
-                if matched:
-                    new_session(matched)
-                    st.rerun()
-                else:
-                    st.warning("해당 이름의 환자를 찾지 못했습니다. 배정받은 환자 이름을 확인해 주세요.")
+            if st.button("▶ 실습하기  →", key="vpl_hero_practice", type="primary", use_container_width=False):
+                st.session_state.vpl_public_page = "실습하기"
+                st.rerun()
         with right:
             st.markdown("""
             <div class="vpl-hero-photo" role="img" aria-label="SOAP 임상기록지, 청진기와 노트북을 표현한 의료 실습 일러스트">
@@ -546,10 +555,10 @@ if not selected or selected not in PATIENTS:
                         st.markdown(f'<div class="vpl-case-meta">{escape(str(ident["age"]))}세 · {escape(str(ident["sex"]))} · {escape(str(ident["diagnosis"]))}</div>', unsafe_allow_html=True)
                         st.markdown(f'<div class="vpl-case-summary">{escape(case_summaries[case_id])}</div>', unsafe_allow_html=True)
         st.caption("※ 소개 내용은 교육용 개요입니다. 구체적인 병력과 검사 결과는 실습 과정에서 확인합니다.")
-    else:
+    elif page == "이용 가이드":
         st.markdown('<div class="vpl-section-heading">이용 가이드</div><div class="vpl-lead">실습 시작부터 SOAP 보고서 제출까지 순서대로 진행해 보세요.</div>', unsafe_allow_html=True)
         steps = [
-            ("01 · 환자 불러오기", "홈 화면에서 교수자가 배정한 환자의 이름을 정확히 입력하고 ‘실습 환자 불러오기’를 누릅니다."),
+            ("01 · 환자 불러오기", "상단 ‘실습하기’ 메뉴에서 교수자가 배정한 환자의 이름을 정확히 입력하고 ‘실습 시작’을 누릅니다."),
             ("02 · 환자 문진(S)", "증상, 발생 시점, 악화·완화 요인, 일상생활의 어려움 등을 개방형 질문으로 확인합니다."),
             ("03 · 기본 진료기록·의학적 검사 확인", "필요한 기록과 의학적 검사 결과를 확인하고, 임상적 의미를 검토합니다."),
             ("04 · 추가 검사(O)", "검사 항목을 선택하고 그 검사가 필요한 이유를 작성한 뒤 결과를 확인합니다."),
@@ -572,19 +581,31 @@ if not selected or selected not in PATIENTS:
             st.markdown("**P 예시:** ‘환자의 현재 기능 수준에 맞춘 단계적 근력 및 기능적 이동 훈련을 계획하고, 동일한 평가 도구로 경과를 재평가한다.’")
             st.caption("위 문장은 작성 형식을 설명하는 일반 예시이며, 실제 사례의 정답이 아닙니다.")
         st.info("질문 횟수는 현재 앱에 설정된 제한을 따릅니다. 검사 결과는 환자에게 수치를 물어보기보다 해당 검사 메뉴에서 확인하세요.")
+    elif page == "실습하기":
+        st.markdown('<div class="vpl-section-heading">🗒️ 실습하기</div><div class="vpl-lead">배정받은 가상 환자의 이름을 입력하여 실습을 시작하세요.</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            with st.form("patient_lookup"):
+                st.markdown("### 👤 환자 이름을 입력하세요")
+                typed_name = st.text_input("환자 이름", placeholder="배정받은 환자의 이름", label_visibility="collapsed")
+                lookup = st.form_submit_button("실습 시작 →", type="primary", use_container_width=True)
+            if lookup:
+                matched = name_to_id.get(re.sub(r"\s+", "", typed_name))
+                if matched:
+                    new_session(matched)
+                    st.session_state.vpl_saved_inputs = {}
+                    st.session_state.vpl_public_page = "실습하기"
+                    st.rerun()
+                else:
+                    st.warning("해당 이름의 환자를 찾지 못했습니다. 배정받은 환자 이름을 확인해 주세요.")
+        st.info("환자 이름은 '가상 환자 소개'에서 확인할 수 있습니다. (총 7개 사례)")
+        if st.button("가상 환자 소개 바로가기", key="vpl_cases_link"):
+            st.session_state.vpl_public_page = "가상 환자 소개"
+            st.rerun()
     st.stop()
-# 실습 중 홈으로 이동할 때 실습 기록이 사라지지 않도록 확인을 받습니다.
-with st.container(key="vpl_header"):
-    header_title, header_home = st.columns([5, 1.4], vertical_alignment="center")
-    with header_title:
-        st.markdown("<div class='vpl-title'>🩺 Virtual Patient Lab <span>임상의사결정 실습</span></div>", unsafe_allow_html=True)
-    with header_home:
-        with st.popover("⌂ 첫 화면으로", use_container_width=True):
-            st.warning("첫 화면으로 이동하면 현재 실습 화면을 벗어납니다. 다시 환자를 불러올 때 기존 문진·검사·SOAP 기록이 초기화됩니다. 필요한 경우 먼저 PDF를 저장하세요.")
-            if st.button("첫 화면으로 이동", key="confirm_go_home", type="primary", use_container_width=True):
-                st.session_state.active_case = None
-                st.session_state.vpl_public_page = "홈"
-                st.rerun()
+# 실습으로 복귀하면 숨겨졌던 입력 위젯 값을 복원합니다.
+for field, saved_value in st.session_state.vpl_saved_inputs.items():
+    if field not in st.session_state:
+        st.session_state[field] = saved_value
 
 if "medical_test_log" not in st.session_state:
     st.session_state.medical_test_log = []
@@ -752,7 +773,7 @@ result_col, chat_col, soap_col = st.columns([2.5, 5.0, 2.5], gap="medium")
 with chat_col:
     # 환자 정보와 초기화 기능을 한 줄에 압축하여 문진 공간을 확보합니다.
     with st.container(key="patient_header"):
-        patient_info_col, reset_col = st.columns([5, 1.3], vertical_alignment="center", gap="small")
+        patient_info_col, reset_col, home_col = st.columns([5, 1.1, 1.7], vertical_alignment="center", gap="small")
         with patient_info_col:
             photo_col, detail_col = st.columns([1.6, 4.4], vertical_alignment="center", gap="small")
             with photo_col:
@@ -770,6 +791,10 @@ with chat_col:
                 if st.button("초기화 확인", type="primary", key="confirm_patient_reset"):
                     st.session_state.reset_on_next_run = True
                     st.rerun()
+        with home_col:
+            if st.button("⌂ 홈으로", key="vpl_home_near_patient", use_container_width=True, help="작성한 기록은 유지됩니다"):
+                st.session_state.vpl_public_page = "홈"
+                st.rerun()
     st.markdown("**💬 환자 문진**")
     if st.session_state.get("new_notice"):
         st.success(st.session_state.new_notice)
