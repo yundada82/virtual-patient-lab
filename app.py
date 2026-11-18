@@ -424,25 +424,49 @@ st.markdown("""
 
 # 상단 내비게이션은 모든 화면에서 같은 위치에 표시됩니다.
 st.markdown("""<style>
-/* 실제 Streamlit 컨테이너를 sticky로 고정해야 채팅 입력 포커스 후에도 메뉴가 보입니다. */
+/* 메뉴를 Streamlit 본문 스크롤과 분리하여 화면에 고정합니다.
+   sticky는 채팅 입력창으로 자동 스크롤될 때 잘릴 수 있으므로 사용하지 않습니다. */
 .st-key-vpl_fixed_navigation {
-    position: sticky !important;
-    top: 3.25rem !important; /* Streamlit 기본 툴바 아래 */
-    z-index: 999 !important;
-    background: rgba(255,255,255,.98) !important;
-    border-bottom: 1px solid #e1eae8;
-    padding: .55rem .65rem .4rem !important;
-    margin: 0 0 .7rem !important;
-    box-shadow: 0 3px 12px rgba(0,0,0,.035);
+    position: fixed !important;
+    top: 3.45rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: calc(100% - 2.5rem) !important;
+    max-width: 1850px !important;
+    box-sizing: border-box !important;
+    z-index: 999999 !important;
+    background: #ffffff !important;
+    border: 1px solid #e1eae8 !important;
+    border-radius: 0 0 12px 12px !important;
+    padding: .55rem .9rem !important;
+    margin: 0 !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,.07) !important;
 }
-.st-key-vpl_fixed_navigation [data-testid="stHorizontalBlock"] {align-items:center;}
-.st-key-vpl_fixed_navigation .vpl-nav-title {padding:0!important;line-height:1.35!important;}
-/* 실습 화면에서 일반 메뉴에 선택 밑줄이 표시되지 않도록 합니다. */
-.st-key-vpl_fixed_navigation [class*="st-key-vpl_nav_"] button[kind="primary"] {border-bottom:3px solid #176c70!important;}
-@media(max-width:850px) {
-  .st-key-vpl_fixed_navigation {top:3.25rem!important;padding:.35rem .2rem!important;}
-  .st-key-vpl_fixed_navigation .vpl-nav-title {font-size:1rem!important;}
-  .st-key-vpl_fixed_navigation [class*="st-key-vpl_nav_"] button {font-size:.78rem!important;padding:6px 1px!important;}
+.st-key-vpl_fixed_navigation [data-testid="stHorizontalBlock"] {align-items:center!important;}
+.st-key-vpl_fixed_navigation .vpl-nav-title {
+    padding:0!important;
+    margin:0!important;
+    line-height:1.4!important;
+    white-space:nowrap!important;
+}
+.st-key-vpl_fixed_navigation [class*="st-key-vpl_nav_"] button[kind="primary"] {
+    border-bottom:3px solid #176c70!important;
+}
+/* 고정 메뉴가 첫 번째 실습 영역을 덮지 않도록 본문에 공간을 확보합니다. */
+section.main .block-container,
+[data-testid="stMainBlockContainer"] {
+    padding-top: 6.9rem !important;
+    scroll-padding-top: 7.5rem;
+}
+html {scroll-padding-top:7.5rem;}
+@media(max-width:1050px) {
+    .st-key-vpl_fixed_navigation {width:calc(100% - 1rem)!important;padding:.45rem .4rem!important;}
+    .st-key-vpl_fixed_navigation .vpl-nav-title {font-size:.95rem!important;}
+    .st-key-vpl_fixed_navigation [class*="st-key-vpl_nav_"] button {font-size:.78rem!important;padding:6px 1px!important;}
+}
+@media(max-width:750px) {
+    .st-key-vpl_fixed_navigation {top:3.45rem!important;overflow-x:auto!important;}
+    .st-key-vpl_fixed_navigation [data-testid="stHorizontalBlock"] {min-width:720px;}
 }
 </style>""", unsafe_allow_html=True)
 st.markdown("""<style>
@@ -744,9 +768,7 @@ st.markdown("""
 <style>
 /* 헤더를 화면 상단에 유지하여 채팅 입력에 포커스가 이동해도 제목이 사라지지 않도록 합니다. */
 .st-key-vpl_header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    position: relative;
     background: var(--background-color, #fff);
     padding: .35rem 0 .2rem;
     border-bottom: 1px solid rgba(128,128,128,.16);
@@ -755,7 +777,7 @@ st.markdown("""
 /* 화면 높이에 따라 문진 영역이 조절되고, 상단의 불필요한 공간을 줄입니다. */
 .block-container {
     max-width: 1850px;
-    padding-top: .9rem !important;
+    padding-top: 6.9rem !important;
     padding-bottom: .6rem !important;
 }
 .vpl-title { font-size: 1.65rem; font-weight: 750; line-height: 1.25;
