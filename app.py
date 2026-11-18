@@ -533,15 +533,43 @@ with st.container(key="vpl_fixed_navigation"):
                 st.session_state.vpl_public_page = "실습하기"
                 st.rerun()
 page = st.session_state.vpl_public_page
-# 화면별 본문 너비와 상단 내비게이션 너비를 일치시킵니다.
-# 실습 화면은 3열 레이아웃을 위해 더 넓게 유지합니다.
-_vpl_wide = page == "실습하기" and selected in PATIENTS
-_vpl_content_width = "1850px" if _vpl_wide else "1220px"
-st.markdown(f"""<style>
-.st-key-vpl_fixed_navigation {{ max-width: {_vpl_content_width} !important; }}
-section.main .block-container, [data-testid="stMainBlockContainer"] {{
-    max-width: {_vpl_content_width} !important;
-}}
+# 상단 메뉴와 모든 화면의 외곽 너비를 통일합니다.
+# 일반 화면은 넓은 공간을 활용하고, 실습 화면은 기존 3열 레이아웃을 유지합니다.
+st.markdown("""<style>
+.st-key-vpl_fixed_navigation {
+    max-width: 1850px !important;
+}
+section.main .block-container,
+[data-testid="stMainBlockContainer"] {
+    max-width: 1850px !important;
+}
+/* 일반 메뉴와 실습 메뉴 모두 동일한 기준선 사용 */
+.st-key-vpl_fixed_navigation [class*="st-key-vpl_nav_"] button {
+    font-size: 1.23rem !important;
+    font-weight: 750 !important;
+    min-height: 48px !important;
+}
+.st-key-vpl_fixed_navigation [class*="st-key-vpl_practice_nav"] button {
+    font-size: 1.23rem !important;
+    min-height: 48px !important;
+}
+.st-key-vpl_fixed_navigation .vpl-nav-title {
+    font-size: 1.48rem !important;
+}
+/* 홈 화면의 네 가지 설명 항목도 넓은 본문에 맞게 표시 */
+.vpl-features {width:100% !important;}
+.vpl-feature b {font-size:1.16rem !important;}
+.vpl-feature span {font-size:1rem !important;}
+@media(max-width:1250px) {
+    .st-key-vpl_fixed_navigation [class*="st-key-vpl_nav_"] button,
+    .st-key-vpl_fixed_navigation [class*="st-key-vpl_practice_nav"] button {
+        font-size: 1.03rem !important;
+    }
+    .st-key-vpl_fixed_navigation .vpl-nav-title {font-size:1.13rem !important;}
+}
+@media(max-width:750px) {
+    .st-key-vpl_fixed_navigation [data-testid="stHorizontalBlock"] {min-width:820px !important;}
+}
 </style>""", unsafe_allow_html=True)
 
 if page != "실습하기" or selected not in PATIENTS:
