@@ -33,7 +33,11 @@ except Exception as exc:
     st.stop()
 
 try:
-    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"], http_options=types.HttpOptions(timeout=30000))
+    primary_key = st.secrets["GEMINI_API_KEY"]
+    backup_key = st.secrets.get("GEMINI_BACKUP_API_KEY")
+    client = genai.Client(api_key=primary_key, http_options=types.HttpOptions(timeout=30000))
+    backup_client = (genai.Client(api_key=backup_key, http_options=types.HttpOptions(timeout=30000))
+                     if backup_key and backup_key != primary_key else None)
 except (KeyError, FileNotFoundError):
     st.error("관리자가 GEMINI_API_KEY를 Streamlit Secrets에 설정해야 합니다.")
     st.stop()
@@ -415,17 +419,38 @@ def quick_fact_answer(p, question):
     return None
 
 
-def request_patient_reply(history, prompt):
-    """환자 문진 답변을 위한 Gemini 모델 호출."""
-    return client.models.generate_content(
-        model="gemini-3.5-flash-lite",
-        contents=history,
-        config=types.GenerateContentConfig(
-            system_instruction=prompt,
-            temperature=0.2,
-            max_output_tokens=500,
-        ),
+def is_transient_api_error(exc):
+    """일시적인 제한/서버 장애만 백업 전환 대상으로 처리합니다."""
+    code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+    try:
+        if int(code) in (429, 500, 502, 503, 504):
+            return True
+    except (TypeError, ValueError):
+        pass
+    name = type(exc).__name__.lower()
+    return isinstance(exc, (TimeoutError, ConnectionError)) or any(
+        word in name for word in ("timeout", "connection", "deadline")
     )
+
+
+def request_patient_reply(history, prompt):
+    """기본 키 호출 후 일시적 장애에 한해 백업 프로젝트로 전환합니다."""
+    config = types.GenerateContentConfig(
+        system_instruction=prompt, temperature=0.2, max_output_tokens=500,
+    )
+    try:
+        return client.models.generate_content(
+            model="gemini-3.5-flash-lite", contents=history, config=config,
+        )
+    except Exception as exc:
+        if not backup_client or not is_transient_api_error(exc):
+            raise
+        # 짧은 대기 후 백업 키를 사용합니다. 동일한 대화 기록을 그대로 전달합니다.
+        print(f"기본 Gemini API 일시 오류 ({type(exc).__name__}); 백업으로 전환", flush=True)
+        time.sleep(1)
+        return backup_client.models.generate_content(
+            model="gemini-3.5-flash-lite", contents=history, config=config,
+        )
 
 
 st.markdown("""
@@ -644,7 +669,7 @@ with chat_col:
                         if finish and "MAX_TOKENS" in str(finish):
                             raise ValueError("응답 길이 제한")
                 except Exception as exc:
-                    print(f"Gemini API 오류: {type(exc).__name__}: {exc}", flush=True)
+                    print(f"Gemini API 오류: {type(exc).__name__} (HTTP {getattr(exc, 'code', None) or getattr(exc, 'status_code', None)})", flush=True)
                     st.session_state.reply_pending = False
                     st.session_state.reply_error = True
                     # API 키·요청 본문·환자 데이터는 노출하지 않고 오류 유형과 코드만 표시합니다.
