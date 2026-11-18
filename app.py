@@ -424,26 +424,49 @@ st.markdown("""
 
 # 상단 내비게이션은 모든 화면에서 같은 위치에 표시됩니다.
 st.markdown("""<style>
+/* 실제 Streamlit 컨테이너를 sticky로 고정해야 채팅 입력 포커스 후에도 메뉴가 보입니다. */
+.st-key-vpl_fixed_navigation {
+    position: sticky !important;
+    top: 3.25rem !important; /* Streamlit 기본 툴바 아래 */
+    z-index: 999 !important;
+    background: rgba(255,255,255,.98) !important;
+    border-bottom: 1px solid #e1eae8;
+    padding: .55rem .65rem .4rem !important;
+    margin: 0 0 .7rem !important;
+    box-shadow: 0 3px 12px rgba(0,0,0,.035);
+}
+.st-key-vpl_fixed_navigation [data-testid="stHorizontalBlock"] {align-items:center;}
+.st-key-vpl_fixed_navigation .vpl-nav-title {padding:0!important;line-height:1.35!important;}
+/* 실습 화면에서 일반 메뉴에 선택 밑줄이 표시되지 않도록 합니다. */
+.st-key-vpl_fixed_navigation [class*="st-key-vpl_nav_"] button[kind="primary"] {border-bottom:3px solid #176c70!important;}
+@media(max-width:850px) {
+  .st-key-vpl_fixed_navigation {top:3.25rem!important;padding:.35rem .2rem!important;}
+  .st-key-vpl_fixed_navigation .vpl-nav-title {font-size:1rem!important;}
+  .st-key-vpl_fixed_navigation [class*="st-key-vpl_nav_"] button {font-size:.78rem!important;padding:6px 1px!important;}
+}
+</style>""", unsafe_allow_html=True)
+st.markdown("""<style>
 [class*="st-key-vpl_practice_nav"] button {background:#087d7c!important;color:white!important;border-radius:28px!important;border:0!important;font-weight:750!important;white-space:nowrap!important;}
 [class*="st-key-vpl_practice_nav"] button:hover {background:#086967!important;}
 </style>""", unsafe_allow_html=True)
-top_brand, top_nav = st.columns([1.0, 1.8], vertical_alignment="center", gap="medium")
-with top_brand:
-    st.markdown('<div class="vpl-nav-title">🩺 Virtual Patient Lab <span style="font-size:.76rem;font-weight:500;color:#69827f">| 임상의사결정 실습 플랫폼</span></div>', unsafe_allow_html=True)
-with top_nav:
-    nav_items = ["홈", "실습 안내", "가상 환자 소개", "이용 가이드"]
-    nav_cols = st.columns([.7, 1.1, 1.45, 1.05, 1.45], gap="small")
-    for index, label in enumerate(nav_items):
-        with nav_cols[index]:
-            if st.button(label, key=f"vpl_nav_{index}", type="primary" if st.session_state.vpl_public_page == label else "secondary", use_container_width=True):
-                st.session_state.vpl_public_page = label
+with st.container(key="vpl_fixed_navigation"):
+    top_brand, top_nav = st.columns([1.0, 1.8], vertical_alignment="center", gap="medium")
+    with top_brand:
+        st.markdown('<div class="vpl-nav-title">🩺 Virtual Patient Lab <span style="font-size:.76rem;font-weight:500;color:#69827f">| 임상의사결정 실습 플랫폼</span></div>', unsafe_allow_html=True)
+    with top_nav:
+        nav_items = ["홈", "실습 안내", "가상 환자 소개", "이용 가이드"]
+        nav_cols = st.columns([.7, 1.1, 1.45, 1.05, 1.45], gap="small")
+        for index, label in enumerate(nav_items):
+            with nav_cols[index]:
+                if st.button(label, key=f"vpl_nav_{index}", type="primary" if st.session_state.vpl_public_page == label else "secondary", use_container_width=True):
+                    st.session_state.vpl_public_page = label
+                    st.rerun()
+        with nav_cols[-1]:
+            if st.button("▶ 실습하기", key="vpl_practice_nav", use_container_width=True):
+                st.session_state.vpl_public_page = "실습하기"
                 st.rerun()
-    with nav_cols[-1]:
-        if st.button("▶ 실습하기", key="vpl_practice_nav", use_container_width=True):
-            st.session_state.vpl_public_page = "실습하기"
-            st.rerun()
 page = st.session_state.vpl_public_page
-st.markdown('<div style="border-bottom:1px solid #e1eae8;margin:4px 0 10px"></div>', unsafe_allow_html=True)
+
 
 if page != "실습하기" or selected not in PATIENTS:
     if page == "홈":
