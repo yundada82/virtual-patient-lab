@@ -3,6 +3,9 @@ Install: streamlit, google-genai, reportlab. Set GEMINI_API_KEY in Streamlit sec
 The JSON shipped to students MUST NOT include instructor_only fields.
 """
 import json
+import sqlite3
+import secrets
+from datetime import datetime, timezone
 import re
 import time
 from io import BytesIO
@@ -307,6 +310,75 @@ def referral_record_lines(identity):
     ]
 
 
+# 실습 복구: 브라우저 URL에 유지되는 무작위 복구 ID + SQLite 자동 저장.
+# 주의: Streamlit Community Cloud의 로컬 SQLite 파일은 앱 재배포/컨테이너 교체 시 사라질 수 있습니다.
+RECOVERY_DB = Path(__file__).resolve().parent / "vpl_recovery.sqlite3"
+RECOVERY_FIELDS = ("messages", "exam_log", "medical_test_log", "report_requested",
+                   "student_group", "student_names", "assessment", "plan",
+                   "exam_reason", "exam_choice")
+
+def recovery_connection():
+    con = sqlite3.connect(str(RECOVERY_DB), timeout=10)
+    con.execute("PRAGMA busy_timeout=10000")
+    con.execute("CREATE TABLE IF NOT EXISTS practice (token TEXT NOT NULL, case_id TEXT NOT NULL, "
+                "payload TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(token, case_id))")
+    return con
+
+def save_practice():
+    case_id = st.session_state.get("active_case")
+    token = st.session_state.get("vpl_recovery_token")
+    if not case_id or not token:
+        return
+    values = dict(st.session_state.get("vpl_saved_inputs", {}))
+    values.update({k: st.session_state[k] for k in RECOVERY_FIELDS if k in st.session_state})
+    data = {k: values.get(k, [] if k in ("messages", "exam_log", "medical_test_log")
+                          else False if k == "report_requested" else "") for k in RECOVERY_FIELDS}
+    try:
+        with recovery_connection() as con:
+            con.execute("INSERT OR REPLACE INTO practice VALUES (?, ?, ?, ?)",
+                        (token, case_id, json.dumps(data, ensure_ascii=False),
+                         datetime.now(timezone.utc).isoformat()))
+    except (sqlite3.Error, TypeError, ValueError) as exc:
+        st.session_state.vpl_save_warning = f"실습 기록 저장 실패: {type(exc).__name__}"
+
+def load_practice(case_id):
+    try:
+        with recovery_connection() as con:
+            row = con.execute("SELECT payload FROM practice WHERE token=? AND case_id=?",
+                              (st.session_state.vpl_recovery_token, case_id)).fetchone()
+        return json.loads(row[0]) if row else None
+    except (sqlite3.Error, ValueError, TypeError):
+        return None
+
+def delete_practice(case_id):
+    try:
+        with recovery_connection() as con:
+            con.execute("DELETE FROM practice WHERE token=? AND case_id=?",
+                        (st.session_state.vpl_recovery_token, case_id))
+    except sqlite3.Error:
+        st.session_state.vpl_save_warning = "이전 기록 삭제에 실패했습니다."
+
+def restore_practice(case_id, saved):
+    new_session(case_id)
+    for key in RECOVERY_FIELDS:
+        if key in saved:
+            st.session_state[key] = saved[key]
+    st.session_state.vpl_saved_inputs = {k: saved[k] for k in PERSISTENT_INPUTS if k in saved}
+    # 응답 도중 끊겼다면 마지막 질문을 다시 처리할 수 있도록 합니다.
+    messages = st.session_state.messages
+    if messages and messages[-1].get("role") == "user":
+        st.session_state.reply_error = True
+        st.session_state.reply_error_detail = "이전 응답이 완료되지 않았습니다. '답변 다시 시도'를 누르세요."
+    st.session_state.new_notice = "이전 실습 기록을 불러왔습니다."
+
+# 복구 ID는 URL에 남아 새로고침/재연결 후에도 동일한 실습 기록을 찾습니다.
+# 서로 다른 브라우저/조가 동일한 환자명을 입력해도 기록이 섞이지 않습니다.
+recovery_token = st.query_params.get("vpl_id", "")
+if not re.fullmatch(r"[A-Za-z0-9_-]{20,80}", recovery_token):
+    recovery_token = secrets.token_urlsafe(24)
+    st.query_params["vpl_id"] = recovery_token
+st.session_state.vpl_recovery_token = recovery_token
+
 def new_session(case_id):
     st.session_state.active_case = case_id
     st.session_state.messages = []
@@ -328,6 +400,7 @@ def new_session(case_id):
 name_to_id = {p["identity"]["name"].replace(" ", ""): cid for cid, p in PATIENTS.items()}
 selected = st.session_state.get("active_case")
 if st.session_state.pop("reset_on_next_run", False) and selected in PATIENTS:
+    delete_practice(selected)
     new_session(selected)
 if "vpl_public_page" not in st.session_state:
     st.session_state.vpl_public_page = "홈"
@@ -339,6 +412,9 @@ if "vpl_saved_inputs" not in st.session_state:
 for field in PERSISTENT_INPUTS:
     if field in st.session_state and st.session_state.get("vpl_public_page") == "실습하기":
         st.session_state.vpl_saved_inputs[field] = st.session_state[field]
+# 각 화면 재실행 시 최신 상태를 기록합니다.
+if st.session_state.get("active_case") in PATIENTS:
+    save_practice()
 
 st.markdown("""
 <style>
@@ -704,7 +780,7 @@ if page != "실습하기" or selected not in PATIENTS:
             st.markdown("**A 예시:** ‘환자가 호소한 활동 제한과 객관적 평가 결과를 종합하면 하지 근력 저하가 기능적 이동에 영향을 주는 것으로 판단된다.’")
             st.markdown("**P 예시:** ‘환자의 현재 기능 수준에 맞춘 단계적 근력 및 기능적 이동 훈련을 계획하고, 동일한 평가 도구로 경과를 재평가한다.’")
             st.caption("위 문장은 작성 형식을 설명하는 일반 예시이며, 실제 사례의 정답이 아닙니다.")
-        st.info("질문 횟수는 현재 앱에 설정된 제한을 따릅니다. 검사 결과는 환자에게 수치를 물어보기보다 해당 검사 메뉴에서 확인하세요.")
+        st.info("질문 횟수 제한 없이 문진을 진행할 수 있습니다. 검사 결과는 환자에게 수치를 물어보기보다 해당 검사 메뉴에서 확인하세요.")
     elif page == "실습하기":
         st.markdown('<div class="vpl-section-heading">🗒️ 실습하기</div><div class="vpl-lead">배정받은 가상 환자의 이름을 입력하여 실습을 시작하세요.</div>', unsafe_allow_html=True)
         with st.container(border=True):
@@ -715,8 +791,12 @@ if page != "실습하기" or selected not in PATIENTS:
             if lookup:
                 matched = name_to_id.get(re.sub(r"\s+", "", typed_name))
                 if matched:
-                    new_session(matched)
-                    st.session_state.vpl_saved_inputs = {}
+                    saved = load_practice(matched)
+                    if saved:
+                        restore_practice(matched, saved)
+                    else:
+                        new_session(matched)
+                        save_practice()
                     st.session_state.vpl_public_page = "실습하기"
                     st.rerun()
                 else:
@@ -988,11 +1068,11 @@ with chat_col:
     question = st.chat_input(
         "환자에게 질문하거나 의뢰 기록을 요청하세요",
         key="patient_chat_input",
-        disabled=bool(st.session_state.get("reply_pending") or st.session_state.get("reply_error") or user_count >= 20),
+        disabled=bool(st.session_state.get("reply_pending") or st.session_state.get("reply_error")),
     )
     # 매 답변마다 서로 다른 HTML을 렌더링해 Streamlit이 동일한 스크립트를
     # 재사용하지 않도록 합니다. 포커스는 DOM 렌더링 완료 후 다시 확인합니다.
-    if st.session_state.pop("focus_chat_after_reply", False) and user_count < 20:
+    if st.session_state.pop("focus_chat_after_reply", False):
         st.html(f"""
         <script data-chat-focus-turn="{user_count}">
         (() => {{
@@ -1020,10 +1100,9 @@ with chat_col:
         }})();
         </script>
         """, unsafe_allow_javascript=True)
-    if user_count >= 20:
-        st.caption("이번 실습의 질문 횟수 제한(20회)에 도달했습니다.")
-    if question and user_count < 20:
+    if question:
         st.session_state.messages.append({"role": "user", "content": question})
+        save_practice()
         st.session_state.reply_pending = True
         st.session_state.reply_error = False
         st.session_state.reply_error_detail = None
@@ -1076,6 +1155,7 @@ with chat_col:
                     st.session_state.reply_error_detail = diagnostic
                     st.rerun()
         st.session_state.messages.append({"role": "assistant", "content": answer})
+        save_practice()
         st.session_state.focus_chat_after_reply = True
         st.session_state.reply_pending = False
         st.session_state.reply_error = False
@@ -1104,6 +1184,7 @@ with result_col:
                     full_results.append({"key": test_id, "name": test["name"],
                                          "lines": ["■ " + test["name"]] + [line for line in test["lines"] if line]})
                 st.session_state.medical_test_log = full_results
+                save_practice()
                 st.rerun()
         else:
             with st.expander("의학적 검사 결과", expanded=True):
@@ -1139,6 +1220,7 @@ with result_col:
             result = exam_result(patient, chosen)
             st.session_state.exam_log.append({"key": chosen, "name": LABELS.get(chosen, chosen),
                                               "reason": reason.strip(), "result": result})
+            save_practice()
             st.session_state.new_exam_index = len(st.session_state.exam_log) - 1
             st.success(f"새 검사 결과가 추가되었습니다: {LABELS.get(chosen, chosen)}")
     if st.session_state.exam_log:
@@ -1153,13 +1235,15 @@ with result_col:
 with soap_col:
     with st.container(key="soap_heading"):
         st.subheader("✍️ 임상적 판단")
-    st.text_input("조 이름", key="student_group", placeholder="예: 1조")
-    st.text_input("학생 이름", key="student_names")
-    st.text_area("A — Assessment", key="assessment", height=155,
+    st.text_input("조 이름", key="student_group", on_change=save_practice, placeholder="예: 1조")
+    st.text_input("학생 이름", key="student_names", on_change=save_practice)
+    st.text_area("A — Assessment", key="assessment", on_change=save_practice, height=155,
                  placeholder="수집한 S·O 정보를 종합한 문제점과 임상적 판단")
-    st.text_area("P — Plan", key="plan", height=155,
+    st.text_area("P — Plan", key="plan", on_change=save_practice, height=155,
                  placeholder="치료 목표, 중재 및 근거, 재평가 계획")
     st.caption("A와 P는 학생이 직접 작성합니다. 검사나 문진 중에도 작성 내용이 유지됩니다.")
+    if st.session_state.get("vpl_save_warning"):
+        st.warning(st.session_state.vpl_save_warning)
 
 def make_pdf():
     pdfmetrics.registerFont(UnicodeCIDFont("HYSMyeongJo-Medium"))
