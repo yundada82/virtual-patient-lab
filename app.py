@@ -829,18 +829,40 @@ def seems_like_exam(message):
     return any(term.lower() in message.lower() for term in EXAM_WORDS)
 
 
+# 교육용 가상 생활환경: 환자별로 고정하여 질문마다 달라지지 않도록 합니다.
+# 실제 patients.json에 생활환경 정보가 있으면 해당 값을 우선 사용합니다.
+SIMULATED_HOUSING = {
+    "P01": {"floor": "4층", "building": "아파트", "elevator": "있어요"},
+    "P02": {"floor": "3층", "building": "아파트", "elevator": "있어요"},
+    "P03": {"floor": "2층", "building": "빌라", "elevator": "없어요"},
+    "P04": {"floor": "1층", "building": "단독주택", "elevator": "없어요"},
+    "P05": {"floor": "6층", "building": "아파트", "elevator": "있어요"},
+    "P06": {"floor": "2층", "building": "아파트", "elevator": "있어요"},
+    "P07": {"floor": "5층", "building": "아파트", "elevator": "있어요"},
+}
+
+
+def patient_housing(p):
+    # 환자 데이터에 이미 구조화된 주거환경이 있는 경우 우선합니다.
+    explicit = p.get("housing") or p.get("living_environment")
+    return explicit if isinstance(explicit, dict) and explicit else SIMULATED_HOUSING.get(p["id"], {})
+
+
 def system_prompt(p):
     # Only subjective/background facts are sent to Gemini. Objective and instructor notes are excluded.
     known = {"identity": p["identity"], "history": p["history"],
              "subjective": p["subjective"], "functional_observations": p["functional_observations"],
-             "safety_flags": p["safety_flags"]}
+             "safety_flags": p["safety_flags"], "housing": patient_housing(p)}
     return ("당신은 물리치료학과 교육용 가상 환자입니다. 아래 설정은 환자가 알고 있는 사실입니다. "
             "학생의 마지막 질문에만 초점을 맞춰 환자의 말투로 자연스럽고 간결한 한국어 문장 1~2개로 답하세요. "
             "질문에 직접 필요한 정보만 말하고, 묻지 않은 진단명·나이·수술 또는 손상 후 경과 주수·시점을 덧붙이지 마세요. "
             "특히 '질문하신 시기는 손상 후 10주째예요'처럼 질문과 무관한 시간 설명이나 정형화된 마무리 문장을 절대 반복하지 마세요. "
             "시점이나 기간을 명시적으로 물었을 때에만 해당 시점을 답하세요. '어제 뭘 했나요?'는 사고 후 경과를 묻는 질문이 아닙니다. "
             "기억이 나지 않으면 '잘 기억이 안 나요'처럼 짧게 답하고 손상 경과를 부연하지 마세요. "
-            "일상적인 배경 질문에는 설정과 모순되지 않는 선에서 자연스럽게 대화하되, 한 번 말한 생활 정보는 이후 대화에서도 일관되게 유지하세요. "
+            "거주 층수, 엘리베이터, 계단, 주거 형태 같은 생활환경 질문에는 housing 정보를 우선 사용하여 구체적으로 답하세요. "
+            "일상적인 배경 질문에는 설정과 모순되지 않는 범위에서 자연스럽게 답하세요. "
+            "설정에 없는 비핵심 생활 정보는 합리적으로 구성하되 앞선 답변과 일관되게 유지하세요. "
+            "일반적인 생활 질문에 습관적으로 모르겠다고 답하지 마세요. "
             "핵심 임상 사실·수치·검사 결과·새로운 수술력은 임의로 만들지 마세요. "
             "학생에게 의학적 해석, 평가 정답, 치료계획을 제공하지 마세요. "
             "검사 결과를 요청하면 수치를 생성하지 말고 '검사 결과는 검사 시행 메뉴에서 확인해 주세요'라고 답하세요. "
@@ -860,6 +882,20 @@ def quick_fact_answer(p, question):
         return "네, 안녕하세요."
     if greeting in ("감사합니다", "고맙습니다", "감사해요", "고마워요"):
         return "네, 괜찮습니다."
+    housing = patient_housing(p)
+    # 거주 층수 질문은 AI 호출 없이 고정 설정으로 응답하여 일관성을 보장합니다.
+    if any(x in q for x in ("몇층", "몇번째층", "몇층에", "사는층", "거주층", "집이몇층")):
+        floor = housing.get("floor")
+        if floor:
+            return f"저는 {floor}에 살고 있어요."
+    if any(x in q for x in ("엘리베이터", "승강기", "엘베")):
+        elevator = housing.get("elevator")
+        if elevator:
+            return f"저희 집에는 엘리베이터가 {elevator}"
+    if any(x in q for x in ("주거형태", "어떤집", "아파트에", "빌라에", "주택에")):
+        building = housing.get("building")
+        if building:
+            return f"{building}에 살고 있어요."
     phase = identity["phase"]
     diagnosis = identity["diagnosis"]
     subjective = p["subjective"]
